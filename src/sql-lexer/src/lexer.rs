@@ -127,6 +127,7 @@ impl fmt::Display for Token {
     }
 }
 
+#[derive(Debug)]
 pub struct PosToken {
     pub kind: Token,
     pub offset: usize,
