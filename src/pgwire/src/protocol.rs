@@ -398,6 +398,7 @@ fn split_options(value: &str) -> Vec<String> {
     strs
 }
 
+// TODO: document the states?
 #[derive(Debug)]
 enum State {
     Ready,
@@ -447,11 +448,11 @@ where
 
     #[instrument(level = "debug")]
     async fn advance_ready(&mut self) -> Result<State, io::Error> {
-        // Handle timeouts first so we don't execute any statements when there's a pending timeout.
+        // Handle timeouts first, so we don't execute any statements when there's a pending timeout.
         let message = select! {
             biased;
 
-            // `recv_timeout()` is cancel-safe as per it's docs.
+            // `recv_timeout()` is cancel-safe as per its docs.
             Some(timeout) = self.adapter_client.recv_timeout() => {
                 let err: AdapterError = timeout.into();
                 let conn_id = self.adapter_client.session().conn_id();
@@ -470,7 +471,7 @@ where
                 let _ = self.conn.recv().await?;
                 return error_state;
             },
-            // `recv()` is cancel-safe as per it's docs.
+            // `recv()` is cancel-safe as per its docs.
             message = self.conn.recv() => message?,
         };
 
