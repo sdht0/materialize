@@ -55,6 +55,7 @@ use opentelemetry::trace::TraceContextExt;
 use tokio::sync::{mpsc, oneshot};
 use tracing::{debug_span, warn, Instrument};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
+use workspace_hack::mzdbg;
 
 use crate::command::{
     CatalogSnapshot, Command, ExecuteResponse, GetVariablesResponse, StartupResponse,
@@ -508,6 +509,7 @@ impl Coordinator {
         params: Params,
         mut ctx: ExecuteContext,
     ) {
+        mzdbg!("stmt {stmt:?}");
         // This comment describes the various ways DDL can execute (the ordered operations: name
         // resolve, purify, plan, sequence), all of which are managed by this function. DDL has
         // three notable properties that all partially interact.
@@ -779,6 +781,7 @@ impl Coordinator {
             Ok(resolved) => resolved,
             Err(e) => return ctx.retire(Err(e.into())),
         };
+        mzdbg!("stmt {stmt:?}");
         // N.B. The catalog can change during purification so we must validate that the dependencies still exist after
         // purification.  This should be done back on the main thread.
         // We do the validation:

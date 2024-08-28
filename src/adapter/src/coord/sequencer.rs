@@ -31,6 +31,7 @@ use mz_storage_types::connections::inline::IntoInlineConnection;
 use std::sync::Arc;
 use tokio::sync::oneshot;
 use tracing::{event, Instrument, Level, Span};
+use workspace_hack::mzdbg;
 
 use crate::catalog::Catalog;
 use crate::command::{Command, ExecuteResponse, Response};
@@ -72,6 +73,7 @@ impl Coordinator {
         plan: Plan,
         resolved_ids: ResolvedIds,
     ) -> LocalBoxFuture<'_, ()> {
+        mzdbg!("plan {plan:?}");
         async move {
             let responses = ExecuteResponse::generated_from(&PlanKind::from(&plan));
             ctx.tx_mut().set_allowed(responses);

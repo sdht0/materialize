@@ -19,7 +19,7 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 use std::sync::Arc;
 use std::sync::LazyLock;
 use std::time::{Duration, Instant};
-use std::{cmp, env, iter, thread};
+use std::{cmp, env, iter};
 
 use anyhow::{bail, Context};
 use clap::{ArgEnum, Parser};
@@ -69,6 +69,7 @@ use prometheus::IntGauge;
 use tracing::{error, info, info_span, Instrument};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 use url::Url;
+use workspace_hack::SDH_LOGGER;
 
 mod sys;
 
@@ -1061,10 +1062,26 @@ fn run(mut args: Args) -> Result<(), anyhow::Error> {
 
     println!(" Root trace ID: {id}");
 
-    // Block forever.
-    loop {
-        thread::park();
+    println!("sdh: here");
+    SDH_LOGGER.store(true, Ordering::Release);
+
+    let mut client = postgres::Client::connect(
+        "postgresql://materialize@localhost:6875/materialize",
+        postgres::NoTls,
+    )
+    .unwrap();
+
+    let res = client.simple_query("explain select E'aa\nbb'")?;
+    println!("sdh: results:");
+    for r in res {
+        println!("    {r:?}");
     }
+
+    // // Block forever.
+    // loop {
+    //     thread::park();
+    // }
+    Ok(())
 }
 
 fn build_info() -> Vec<String> {

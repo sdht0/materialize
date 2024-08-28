@@ -426,6 +426,7 @@ Issue a SQL query to get started. Need help?
 
     #[instrument(level = "debug")]
     fn send(&self, cmd: Command) {
+        // mzdbg!("cmd {cmd:?}");
         self.inner_cmd_tx
             .send((OpenTelemetryContext::obtain(), cmd))
             .expect("coordinator unexpectedly gone");
@@ -845,6 +846,8 @@ impl SessionClient {
         let name_hint = ApplicationNameHint::from_str(application_name);
         let conn_id = session.conn_id().clone();
         let (tx, rx) = oneshot::channel();
+
+        workspace_hack::mzdbg!("application_name {application_name:?} {name_hint:?}");
 
         // Destructure self so we can hold a mutable reference to the inner client and session at
         // the same time.
