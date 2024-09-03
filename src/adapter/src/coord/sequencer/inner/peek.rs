@@ -24,15 +24,6 @@ use mz_repr::{Datum, GlobalId, RowArena, Timestamp};
 use mz_sql::ast::{ExplainStage, Statement};
 use mz_sql::catalog::CatalogCluster;
 // Import `plan` module, but only import select elements to avoid merge conflicts on use statements.
-use mz_catalog::memory::objects::CatalogItem;
-use mz_sql::plan::QueryWhen;
-use mz_sql::plan::{self, HirScalarExpr};
-use mz_sql::session::metadata::SessionMetadata;
-use mz_transform::EmptyStatisticsOracle;
-use tokio::sync::oneshot;
-use tracing::warn;
-use tracing::{Instrument, Span};
-
 use crate::active_compute_sink::{ActiveComputeSink, ActiveCopyTo};
 use crate::command::ExecuteResponse;
 use crate::coord::id_bundle::CollectionIdBundle;
@@ -56,6 +47,15 @@ use crate::optimize::dataflows::{prep_scalar_expr, EvalTime, ExprPrepStyle};
 use crate::optimize::{self, Optimize};
 use crate::session::{RequireLinearization, Session, TransactionOps, TransactionStatus};
 use crate::statement_logging::StatementLifecycleEvent;
+use mz_catalog::memory::objects::CatalogItem;
+use mz_sql::plan::QueryWhen;
+use mz_sql::plan::{self, HirScalarExpr};
+use mz_sql::session::metadata::SessionMetadata;
+use mz_transform::EmptyStatisticsOracle;
+use tokio::sync::oneshot;
+use tracing::warn;
+use tracing::{Instrument, Span};
+use workspace_hack::mzdbg;
 
 impl Staged for PeekStage {
     type Ctx = ExecuteContext;
@@ -258,6 +258,9 @@ impl Coordinator {
             ),
             ctx
         );
+
+        mzdbg!("stage {stage:?}");
+
         self.sequence_staged(ctx, Span::current(), stage).await;
     }
 

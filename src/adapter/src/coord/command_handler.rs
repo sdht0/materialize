@@ -530,8 +530,8 @@ impl Coordinator {
         //    these generate the `Op::TransactionDryRun` catalog op. When applied with
         //    `catalog_transact`, that op will always produce the `TransactionDryRun` error. The
         //    `catalog_transact_with_ddl_transaction` function intercepts that error and reports
-        //    success to the user, but nothing is yet committed to the real catalog. At `COMMIT` all
-        //    of the ops but without dry run are applied. The purpose of this is to allow multiple,
+        //    success to the user, but nothing is yet committed to the real catalog. At `COMMIT`,
+        //    all ops but without dry run are applied. The purpose of this is to allow multiple,
         //    atomic renames in the same transaction.
         // 3. Some DDLs do off-thread work during purification or sequencing that is expensive or
         //    makes network calls (interfacing with secrets, optimization of views/indexes, source
@@ -781,8 +781,8 @@ impl Coordinator {
             Ok(resolved) => resolved,
             Err(e) => return ctx.retire(Err(e.into())),
         };
-        mzdbg!("stmt {stmt:?}");
-        // N.B. The catalog can change during purification so we must validate that the dependencies still exist after
+        mzdbg!("stmt resolved_ids {stmt:?} | {resolved_ids:?}");
+        // N.B. The catalog can change during purification, so we must validate that the dependencies still exist after
         // purification.  This should be done back on the main thread.
         // We do the validation:
         //   - In the handler for `Message::PurifiedStatementReady`, before we handle the purified statement.
@@ -946,6 +946,8 @@ impl Coordinator {
             // All other statements are handled immediately.
             _ => (stmt, resolved_ids),
         };
+
+        mzdbg!("stmt purified {stmt:?} | {resolved_ids:?}");
 
         match self.plan_statement(ctx.session(), stmt, &params, &resolved_ids) {
             Ok(plan) => self.sequence_plan(ctx, plan, resolved_ids).await,

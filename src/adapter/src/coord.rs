@@ -1272,7 +1272,7 @@ impl Drop for ExecuteContextExtra {
 /// This struct collects a bundle of state that needs to be threaded
 /// through various functions as part of statement execution.
 /// Currently, it is only used to finalize execution, by calling one
-/// of the methods `retire` or `retire_aysnc`. Finalizing execution
+/// of the methods `retire` or `retire_async`. Finalizing execution
 /// involves sending the session back to the pgwire layer so that it
 /// may be used to process further commands. In the future, it will
 /// also involve performing some work on the main coordinator thread
