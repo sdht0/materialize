@@ -31,7 +31,6 @@ use mz_storage_types::connections::inline::IntoInlineConnection;
 use std::sync::Arc;
 use tokio::sync::oneshot;
 use tracing::{event, Instrument, Level, Span};
-use workspace_hack::mzdbg;
 
 use crate::catalog::Catalog;
 use crate::command::{Command, ExecuteResponse, Response};
@@ -73,9 +72,11 @@ impl Coordinator {
         plan: Plan,
         resolved_ids: ResolvedIds,
     ) -> LocalBoxFuture<'_, ()> {
-        mzdbg!("plan {plan:?}");
+        workspace_hack::mzdbgvar!(plan);
         async move {
             let responses = ExecuteResponse::generated_from(&PlanKind::from(&plan));
+            workspace_hack::mzdbgvar!(responses);
+
             ctx.tx_mut().set_allowed(responses);
 
             if self.controller.read_only() && !plan.allowed_in_read_only() {
@@ -97,6 +98,7 @@ impl Coordinator {
                     )
                 }
             };
+            workspace_hack::mzdbgvar!(target_cluster);
             let (target_cluster_id, target_cluster_name) = match self
                 .catalog()
                 .resolve_target_cluster(target_cluster, ctx.session())
@@ -104,6 +106,8 @@ impl Coordinator {
                 Ok(cluster) => (Some(cluster.id), Some(cluster.name.clone())),
                 Err(_) => (None, None),
             };
+            workspace_hack::mzdbgvar!(target_cluster_id);
+            workspace_hack::mzdbgvar!(target_cluster_name);
 
             if let (Some(cluster_id), Some(statement_id)) =
                 (target_cluster_id, ctx.extra().contents())

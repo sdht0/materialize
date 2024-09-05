@@ -603,6 +603,7 @@ where
             .get_portal_unverified(EMPTY_PORTAL)
             .map(|portal| portal.desc.clone())
             .expect("unnamed portal should be present");
+        workspace_hack::mzdbgvar!(stmt_desc);
         if !stmt_desc.param_types.is_empty() {
             return self
                 .error(ErrorResponse::error(
@@ -630,6 +631,7 @@ where
         {
             Ok((response, execute_started)) => {
                 self.send_pending_notices().await?;
+                workspace_hack::mzdbgvar!(response);
                 self.send_execute_response(
                     response,
                     stmt_desc.relation_desc,

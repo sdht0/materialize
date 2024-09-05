@@ -20,6 +20,20 @@ macro_rules! mzdbg {
     };
 }
 
+#[macro_export]
+macro_rules! mzdbgvar {
+    ($i:ident) => {
+        if workspace_hack::SDH_LOGGER.load(std::sync::atomic::Ordering::Acquire) {
+            eprintln!(
+                "\nsdh var [{}:{}] {} = {:?}",
+                file!(),
+                line!(),
+                stringify!($i),
+                $i
+            );
+        }
+    };
+}
 // enum JoinOrigin {
 //     // "the reason for the join to exist"
 //     InnerJoin(SqlConcept),

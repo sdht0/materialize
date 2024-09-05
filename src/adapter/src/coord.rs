@@ -80,6 +80,7 @@ use mz_storage_types::read_holds::ReadHold;
 use std::borrow::Cow;
 use std::collections::{BTreeMap, BTreeSet, VecDeque};
 use std::fmt;
+use std::fmt::Debug;
 use std::net::Ipv4Addr;
 use std::num::NonZeroI64;
 use std::ops::Neg;
@@ -912,7 +913,7 @@ pub(crate) enum StageResult<T> {
 }
 
 /// Common functionality for [Coordinator::sequence_staged].
-pub(crate) trait Staged: Send {
+pub(crate) trait Staged: Send + Debug {
     type Ctx: StagedContext;
 
     fn validity(&mut self) -> &mut PlanValidity;
