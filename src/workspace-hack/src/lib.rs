@@ -11,23 +11,24 @@
 
 pub static SDH_LOGGER: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
-#[macro_export]
-macro_rules! mzdbg {
-    ($($args:tt)*) => {
-        if workspace_hack::SDH_LOGGER.load(std::sync::atomic::Ordering::Acquire) {
-            eprintln!("\nsdh [{}:{}] {}", file!(), line!(), format!($($args)*));
-        }
-    };
-}
+// #[macro_export]
+// macro_rules! mzdbg {
+//     ($($args:tt)*) => {
+//         if workspace_hack::SDH_LOGGER.load(std::sync::atomic::Ordering::Acquire) {
+//             eprintln!("\nsdh [{}:{}] {}", file!(), line!(), format!($($args)*));
+//         }
+//     };
+// }
 
 #[macro_export]
 macro_rules! mzdbgvar {
-    ($i:ident) => {
+    ($func:literal, $i:ident) => {
         if workspace_hack::SDH_LOGGER.load(std::sync::atomic::Ordering::Acquire) {
             eprintln!(
-                "\nsdh var [{}:{}] {} = {:?}",
+                "\nsdh [{}:{}] {}(): {} = {:?}",
                 file!(),
                 line!(),
+                $func,
                 stringify!($i),
                 $i
             );

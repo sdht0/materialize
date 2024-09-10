@@ -162,6 +162,7 @@ impl Coordinator {
         S::Ctx: Send + 'static,
     {
         return_if_err!(stage.validity().check(self.catalog()), ctx);
+        let mut i = 0;
         loop {
             let mut cancel_enabled = stage.cancel_enabled();
             if let Some(session) = ctx.session() {
@@ -191,6 +192,9 @@ impl Coordinator {
                 .instrument(parent_span.clone())
                 .await;
             let res = return_if_err!(next, ctx);
+            workspace_hack::mzdbgvar!("sequence_staged", i);
+            workspace_hack::mzdbgvar!("sequence_staged", res);
+            i += 1;
             stage = match res {
                 StageResult::Handle(handle) => {
                     let internal_cmd_tx = self.internal_cmd_tx.clone();

@@ -72,10 +72,10 @@ impl Coordinator {
         plan: Plan,
         resolved_ids: ResolvedIds,
     ) -> LocalBoxFuture<'_, ()> {
-        workspace_hack::mzdbgvar!(plan);
+        workspace_hack::mzdbgvar!("sequence_plan", plan);
         async move {
             let responses = ExecuteResponse::generated_from(&PlanKind::from(&plan));
-            workspace_hack::mzdbgvar!(responses);
+            workspace_hack::mzdbgvar!("sequence_plan", responses);
 
             ctx.tx_mut().set_allowed(responses);
 
@@ -98,7 +98,7 @@ impl Coordinator {
                     )
                 }
             };
-            workspace_hack::mzdbgvar!(target_cluster);
+            workspace_hack::mzdbgvar!("sequence_plan", target_cluster);
             let (target_cluster_id, target_cluster_name) = match self
                 .catalog()
                 .resolve_target_cluster(target_cluster, ctx.session())
@@ -106,8 +106,8 @@ impl Coordinator {
                 Ok(cluster) => (Some(cluster.id), Some(cluster.name.clone())),
                 Err(_) => (None, None),
             };
-            workspace_hack::mzdbgvar!(target_cluster_id);
-            workspace_hack::mzdbgvar!(target_cluster_name);
+            workspace_hack::mzdbgvar!("sequence_plan", target_cluster_id);
+            workspace_hack::mzdbgvar!("sequence_plan", target_cluster_name);
 
             if let (Some(cluster_id), Some(statement_id)) =
                 (target_cluster_id, ctx.extra().contents())

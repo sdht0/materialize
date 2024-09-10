@@ -586,6 +586,8 @@ where
 
     #[instrument(level = "debug")]
     async fn one_query(&mut self, stmt: Statement<Raw>, sql: String) -> Result<State, io::Error> {
+        workspace_hack::mzdbgvar!("one_query", stmt);
+        workspace_hack::mzdbgvar!("one_query", sql);
         // Bind the portal. Note that this does not set the empty string prepared
         // statement.
         const EMPTY_PORTAL: &str = "";
@@ -603,7 +605,7 @@ where
             .get_portal_unverified(EMPTY_PORTAL)
             .map(|portal| portal.desc.clone())
             .expect("unnamed portal should be present");
-        workspace_hack::mzdbgvar!(stmt_desc);
+        workspace_hack::mzdbgvar!("one_query", stmt_desc);
         if !stmt_desc.param_types.is_empty() {
             return self
                 .error(ErrorResponse::error(
@@ -631,7 +633,7 @@ where
         {
             Ok((response, execute_started)) => {
                 self.send_pending_notices().await?;
-                workspace_hack::mzdbgvar!(response);
+                workspace_hack::mzdbgvar!("one_query", response);
                 self.send_execute_response(
                     response,
                     stmt_desc.relation_desc,
@@ -1778,6 +1780,7 @@ where
         } else {
             &portal_name
         };
+        workspace_hack::mzdbgvar!("send_rows", result_format_portal_name);
         let result_formats = self
             .adapter_client
             .session()
@@ -1785,6 +1788,7 @@ where
             .expect("valid fetch portal name for send rows")
             .result_formats
             .clone();
+        workspace_hack::mzdbgvar!("send_rows", result_formats);
 
         let (mut wait_once, mut deadline) = match timeout {
             ExecuteTimeout::None => (false, None),
@@ -1920,6 +1924,7 @@ where
                 .expect("valid fetch portal")
         });
         let response_message = get_response(max_rows, total_sent_rows, fetch_portal);
+        workspace_hack::mzdbgvar!("send_rows", response_message);
         self.send(response_message).await?;
         Ok((
             State::Ready,

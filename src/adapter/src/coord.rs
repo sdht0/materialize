@@ -901,6 +901,7 @@ pub enum TargetCluster {
 }
 
 /// Result types for each stage of a sequence.
+#[derive(Debug)]
 pub(crate) enum StageResult<T> {
     /// A task was spawned that will return the next stage.
     Handle(JoinHandle<Result<T, AdapterError>>),

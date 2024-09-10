@@ -674,6 +674,10 @@ impl<T: TimestampManipulation> Session<T> {
         result_formats: Vec<Format>,
         catalog_revision: u64,
     ) -> Result<(), AdapterError> {
+        workspace_hack::mzdbgvar!("set_portal", portal_name);
+        workspace_hack::mzdbgvar!("set_portal", stmt);
+        workspace_hack::mzdbgvar!("set_portal", params);
+        workspace_hack::mzdbgvar!("set_portal", result_formats);
         // The empty portal can be silently replaced.
         if !portal_name.is_empty() && self.portals.contains_key(&portal_name) {
             return Err(AdapterError::DuplicateCursor(portal_name));

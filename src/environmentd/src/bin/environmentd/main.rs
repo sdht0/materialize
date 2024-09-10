@@ -1071,7 +1071,7 @@ fn run(mut args: Args) -> Result<(), anyhow::Error> {
     )
     .unwrap();
 
-    let res = client.simple_query("explain select E'aa\nbb'")?;
+    let res = client.simple_query("explain select E'aa\nbb', E'cc\ndd'")?;
     println!("sdh: results:");
     for r in res {
         println!("    {r:?}");
@@ -1079,7 +1079,7 @@ fn run(mut args: Args) -> Result<(), anyhow::Error> {
 
     // // Block forever.
     // loop {
-    //     thread::park();
+    //     std::thread::park();
     // }
     Ok(())
 }

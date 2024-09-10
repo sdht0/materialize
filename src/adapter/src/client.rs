@@ -847,7 +847,8 @@ impl SessionClient {
         let conn_id = session.conn_id().clone();
         let (tx, rx) = oneshot::channel();
 
-        workspace_hack::mzdbg!("application_name {application_name:?} {name_hint:?}");
+        workspace_hack::mzdbgvar!("send_with_cancel", application_name);
+        workspace_hack::mzdbgvar!("send_with_cancel", name_hint);
 
         // Destructure self so we can hold a mutable reference to the inner client and session at
         // the same time.

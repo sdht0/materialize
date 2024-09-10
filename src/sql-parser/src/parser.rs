@@ -20,10 +20,6 @@
 
 //! SQL Parser
 
-use std::collections::BTreeMap;
-use std::error::Error;
-use std::fmt;
-
 use crate::ast::display::AstDisplay;
 use crate::ast::*;
 use crate::ident;
@@ -36,8 +32,10 @@ use mz_ore::stack::{CheckedRecursion, RecursionGuard, RecursionLimitError};
 use mz_sql_lexer::keywords::*;
 use mz_sql_lexer::lexer::{self, IdentString, LexerError, PosToken, Token};
 use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
+use std::error::Error;
+use std::fmt;
 use tracing::{debug, warn};
-use workspace_hack::mzdbg;
 use IsLateral::*;
 use IsOptional::*;
 
@@ -127,12 +125,11 @@ pub fn parse_statements_with_limit(
 /// Parses a SQL string containing zero or more SQL statements.
 #[mz_ore::instrument(target = "compiler", level = "trace", name = "sql_to_ast")]
 pub fn parse_statements(sql: &str) -> Result<Vec<StatementParseResult>, ParserStatementError> {
-    mzdbg!("sql {sql:?}");
+    workspace_hack::mzdbgvar!("parse_statements", sql);
     let tokens = lexer::lex(sql).map_err(|error| ParserStatementError {
         error: error.into(),
         statement: None,
     })?;
-    // mzdbg!("tokens {tokens:?}");
     let res = Parser::new(sql, tokens).parse_statements();
     // Don't trace sensitive raw sql, so we can only trace after parsing, and then can only output
     // redacted statements.

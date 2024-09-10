@@ -55,7 +55,6 @@ use opentelemetry::trace::TraceContextExt;
 use tokio::sync::{mpsc, oneshot};
 use tracing::{debug_span, warn, Instrument};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
-use workspace_hack::mzdbg;
 
 use crate::command::{
     CatalogSnapshot, Command, ExecuteResponse, GetVariablesResponse, StartupResponse,
@@ -509,7 +508,8 @@ impl Coordinator {
         params: Params,
         mut ctx: ExecuteContext,
     ) {
-        mzdbg!("stmt {stmt:?}");
+        workspace_hack::mzdbgvar!("handle_execute_inner", stmt);
+        workspace_hack::mzdbgvar!("handle_execute_inner", params);
         // This comment describes the various ways DDL can execute (the ordered operations: name
         // resolve, purify, plan, sequence), all of which are managed by this function. DDL has
         // three notable properties that all partially interact.
@@ -781,7 +781,8 @@ impl Coordinator {
             Ok(resolved) => resolved,
             Err(e) => return ctx.retire(Err(e.into())),
         };
-        mzdbg!("stmt resolved_ids {stmt:?} | {resolved_ids:?}");
+        workspace_hack::mzdbgvar!("handle_execute_inner+resolved_ids", stmt);
+        workspace_hack::mzdbgvar!("handle_execute_inner+resolved_ids", resolved_ids);
         // N.B. The catalog can change during purification, so we must validate that the dependencies still exist after
         // purification.  This should be done back on the main thread.
         // We do the validation:
@@ -947,7 +948,8 @@ impl Coordinator {
             _ => (stmt, resolved_ids),
         };
 
-        mzdbg!("stmt purified {stmt:?} | {resolved_ids:?}");
+        workspace_hack::mzdbgvar!("handle_execute_inner+purified", stmt);
+        workspace_hack::mzdbgvar!("handle_execute_inner+purified", resolved_ids);
 
         match self.plan_statement(ctx.session(), stmt, &params, &resolved_ids) {
             Ok(plan) => self.sequence_plan(ctx, plan, resolved_ids).await,

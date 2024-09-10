@@ -258,7 +258,7 @@ impl Coordinator {
             ctx
         );
 
-        workspace_hack::mzdbgvar!(stage);
+        workspace_hack::mzdbgvar!("explain_peek", stage);
 
         self.sequence_staged(ctx, Span::current(), stage).await;
     }
@@ -411,11 +411,11 @@ impl Coordinator {
         }: PeekStageLinearizeTimestamp,
     ) -> Result<StageResult<Box<PeekStage>>, AdapterError> {
         let isolation_level = session.vars().transaction_isolation().clone();
-        workspace_hack::mzdbgvar!(isolation_level);
+        workspace_hack::mzdbgvar!("peek_linearize_timestamp", isolation_level);
         let timeline = Coordinator::get_timeline(&timeline_context);
         let needs_linearized_read_ts =
             Coordinator::needs_linearized_read_ts(&isolation_level, &plan.when);
-        workspace_hack::mzdbgvar!(needs_linearized_read_ts);
+        workspace_hack::mzdbgvar!("peek_linearize_timestamp", needs_linearized_read_ts);
 
         let build_stage = move |oracle_read_ts: Option<Timestamp>| PeekStageRealTimeRecency {
             validity,

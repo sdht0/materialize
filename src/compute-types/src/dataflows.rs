@@ -12,6 +12,13 @@
 use std::collections::{BTreeMap, BTreeSet};
 use std::fmt;
 
+use crate::dataflows::proto_dataflow_description::{
+    ProtoIndexExport, ProtoIndexImport, ProtoSinkExport, ProtoSourceImport,
+};
+use crate::plan::flat_plan::FlatPlan;
+use crate::plan::Plan;
+use crate::sinks::{ComputeSinkConnection, ComputeSinkDesc};
+use crate::sources::{SourceInstanceArguments, SourceInstanceDesc};
 use mz_expr::{CollectionPlan, MirRelationExpr, MirScalarExpr, OptimizedMirRelationExpr};
 use mz_ore::soft_assert_or_log;
 use mz_proto::{IntoRustIfSome, ProtoMapEntry, ProtoType, RustType, TryFromProtoError};
@@ -23,14 +30,6 @@ use proptest::strategy::{BoxedStrategy, Strategy};
 use proptest_derive::Arbitrary;
 use serde::{Deserialize, Serialize};
 use timely::progress::Antichain;
-
-use crate::dataflows::proto_dataflow_description::{
-    ProtoIndexExport, ProtoIndexImport, ProtoSinkExport, ProtoSourceImport,
-};
-use crate::plan::flat_plan::FlatPlan;
-use crate::plan::Plan;
-use crate::sinks::{ComputeSinkConnection, ComputeSinkDesc};
-use crate::sources::{SourceInstanceArguments, SourceInstanceDesc};
 
 include!(concat!(env!("OUT_DIR"), "/mz_compute_types.dataflows.rs"));
 
@@ -72,6 +71,19 @@ pub struct DataflowDescription<P, S: 'static = (), T = mz_repr::Timestamp> {
     pub refresh_schedule: Option<RefreshSchedule>,
     /// Human readable name
     pub debug_name: String,
+    // Timeline should be epochmilisec
+    // Should not have refresh every
+    // pub timeline: Timeline,
+    // pub discard_temporal_data: bool,
+    // changes to the plan:
+    // prepare the mfp to filter out data
+
+    // local to the replica:
+    // communicate as part of the protocol dynconfig
+    // pass Option<t_limit> through the call stack as a param
+
+    // redering
+    // start at flatmap
 }
 
 impl<T> DataflowDescription<Plan<T>, (), mz_repr::Timestamp> {

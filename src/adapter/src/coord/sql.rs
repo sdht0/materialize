@@ -36,6 +36,7 @@ impl Coordinator {
     ) -> Result<mz_sql::plan::Plan, AdapterError> {
         let pcx = session.pcx();
         let catalog = self.catalog().for_session(session);
+        workspace_hack::mzdbgvar!("plan_statement", stmt);
         let plan = mz_sql::plan::plan(Some(pcx), &catalog, stmt, params, resolved_ids)?;
         Ok(plan)
     }
