@@ -12,15 +12,6 @@
 //! It listens for SQL connections on port 6875 (MTRL) and for HTTP connections
 //! on port 6876.
 
-use std::ffi::CStr;
-use std::net::{IpAddr, Ipv4Addr, SocketAddr};
-use std::path::PathBuf;
-use std::sync::atomic::{AtomicUsize, Ordering};
-use std::sync::Arc;
-use std::sync::LazyLock;
-use std::time::{Duration, Instant};
-use std::{cmp, env, iter};
-
 use anyhow::{bail, Context};
 use clap::{ArgEnum, Parser};
 use fail::FailScenario;
@@ -66,6 +57,14 @@ use mz_sql::catalog::EnvironmentId;
 use mz_storage_types::connections::ConnectionContext;
 use opentelemetry::trace::TraceContextExt;
 use prometheus::IntGauge;
+use std::ffi::CStr;
+use std::net::{IpAddr, Ipv4Addr, SocketAddr};
+use std::path::PathBuf;
+use std::sync::atomic::{AtomicUsize, Ordering};
+use std::sync::Arc;
+use std::sync::LazyLock;
+use std::time::{Duration, Instant};
+use std::{cmp, env, iter};
 use tracing::{error, info, info_span, Instrument};
 use tracing_opentelemetry::OpenTelemetrySpanExt;
 use url::Url;
@@ -1071,15 +1070,30 @@ fn run(mut args: Args) -> Result<(), anyhow::Error> {
     )
     .unwrap();
 
-    let res = client.simple_query("explain select E'aa\nbb', E'cc\ndd'")?;
-    println!("sdh: results:");
-    for r in res {
-        println!("    {r:?}");
+    pub fn get_buf_reader(path: &str) -> std::io::BufReader<std::fs::File> {
+        std::io::BufReader::new(
+            std::fs::File::open(path)
+                .unwrap_or_else(|e| panic!("Could not open file: {path}: {e}")),
+        )
+    }
+
+    pub fn get_file_lines(path: &str) -> impl Iterator<Item = String> {
+        use std::io::BufRead;
+        get_buf_reader(path).lines().map_while(Result::ok)
+    }
+
+    for line in get_file_lines(".vscode/queries.txt") {
+        println!("************* sdh: query = {line}");
+        let res = client.simple_query(&line)?;
+        println!("###### sdh: query = {line} | results:");
+        for r in res {
+            println!("    {r:?}");
+        }
     }
 
     // // Block forever.
     // loop {
-    //     std::thread::park();
+    // std::thread::park();
     // }
     Ok(())
 }
