@@ -80,6 +80,7 @@ impl Coordinator {
     /// get stored on the stack which is bad for runtime performance, and blow up our stack usage.
     /// Because of that we purposefully move this Future onto the heap (i.e. Box it).
     pub(crate) fn handle_command(&mut self, mut cmd: Command) -> LocalBoxFuture<()> {
+        workspace_hack::mzdbgvar!("handle_command", cmd.kind());
         async move {
             if let Some(session) = cmd.session_mut() {
                 session.apply_external_metadata_updates();

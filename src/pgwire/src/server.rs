@@ -113,7 +113,10 @@ impl Server {
                         let message = decode_startup(&mut conn).await?;
 
                         match &message {
-                            Some(message) => trace!("cid={} recv={:?}", conn_id, message),
+                            Some(message) => {
+                                workspace_hack::mzdbgvar!("Server::handle_connection", message.kind());
+                                trace!("cid={} recv={:?}", conn_id, message)
+                            },
                             None => trace!("cid={} recv=<eof>", conn_id),
                         }
 

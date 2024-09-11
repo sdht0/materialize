@@ -282,6 +282,10 @@ where
     buf.push(BackendMessage::ReadyForQuery(
         adapter_client.session().transaction().into(),
     ));
+    {
+        let buf_kinds = buf.iter().map(|e| e.kind()).collect::<Vec<_>>();
+        workspace_hack::mzdbgvar!("run", buf_kinds);
+    }
     conn.send_all(buf).await?;
     conn.flush().await?;
 
@@ -481,6 +485,8 @@ where
         // NOTE(guswynn): we could consider adding spans to all message types. Currently
         // only a few message types seem useful.
         let message_name = message.as_ref().map(|m| m.name()).unwrap_or_default();
+
+        workspace_hack::mzdbgvar!("StateMachine::advance_ready", message_name);
 
         let next_state = match message {
             Some(FrontendMessage::Query { sql }) => {

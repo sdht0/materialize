@@ -199,7 +199,8 @@ impl Coordinator {
                 StageResult::Handle(handle) => {
                     let internal_cmd_tx = self.internal_cmd_tx.clone();
                     self.handle_spawn(ctx, handle, cancel_enabled, move |ctx, next| {
-                        let _ = internal_cmd_tx.send(next.message(ctx, parent_span));
+                        let m = next.message(ctx, parent_span);
+                        let _ = internal_cmd_tx.send(m);
                     });
                     return;
                 }

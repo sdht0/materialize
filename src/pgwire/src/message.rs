@@ -52,6 +52,33 @@ pub enum BackendMessage {
     CopyDone,
 }
 
+impl BackendMessage {
+    pub fn kind(&self) -> &'static str {
+        match self {
+            BackendMessage::AuthenticationOk => "authenticationOk",
+            BackendMessage::AuthenticationCleartextPassword => "authenticationCleartextPassword",
+            BackendMessage::CommandComplete { .. } => "commandComplete",
+            BackendMessage::EmptyQueryResponse => "emptyQueryResponse",
+            BackendMessage::ReadyForQuery(_) => "readyForQuery",
+            BackendMessage::RowDescription(_) => "rowDescription",
+            BackendMessage::DataRow(_) => "dataRow",
+            BackendMessage::ParameterStatus(_, _) => "parameterStatus",
+            BackendMessage::BackendKeyData { .. } => "backendKeyData",
+            BackendMessage::ParameterDescription(_) => "parameterDescription",
+            BackendMessage::PortalSuspended => "portalSuspended",
+            BackendMessage::NoData => "noData",
+            BackendMessage::ParseComplete => "parseComplete",
+            BackendMessage::BindComplete => "bindComplete",
+            BackendMessage::CloseComplete => "closeComplete",
+            BackendMessage::ErrorResponse(_) => "errorResponse",
+            BackendMessage::CopyInResponse { .. } => "copyInResponse",
+            BackendMessage::CopyOutResponse { .. } => "copyOutResponse",
+            BackendMessage::CopyData(_) => "copyData",
+            BackendMessage::CopyDone => "copyDone",
+        }
+    }
+}
+
 impl From<ErrorResponse> for BackendMessage {
     fn from(err: ErrorResponse) -> BackendMessage {
         BackendMessage::ErrorResponse(err)

@@ -22,10 +22,10 @@ pub static SDH_LOGGER: std::sync::atomic::AtomicBool = std::sync::atomic::Atomic
 
 #[macro_export]
 macro_rules! mzdbgvar {
-    ($func:literal, $i:ident) => {
+    ($func:literal, $i:expr) => {
         if workspace_hack::SDH_LOGGER.load(std::sync::atomic::Ordering::Acquire) {
             eprintln!(
-                "\nsdh [{}:{}] {}(): {} = {:?}",
+                "\nsdh [file:///Users/siddharthasahu/Downloads/installations/materialize/{}:{}] {}(): {} = {:?}",
                 file!(),
                 line!(),
                 $func,

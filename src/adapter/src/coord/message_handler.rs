@@ -56,6 +56,7 @@ impl Coordinator {
     /// (i.e. Box it).
     #[instrument]
     pub(crate) async fn handle_message(&mut self, msg: Message) -> () {
+        workspace_hack::mzdbgvar!("handle_message", msg.kind());
         match msg {
             Message::Command(otel_ctx, cmd) => {
                 // TODO: We need a Span that is not none for the otel_ctx to attach the parent

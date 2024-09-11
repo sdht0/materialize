@@ -226,6 +226,7 @@ where
     C: ConnectionStream,
 {
     let task_name = format!("handle_{}_connection", S::NAME);
+    workspace_hack::mzdbgvar!("serve", task_name);
     let mut set = JoinSet::new();
     loop {
         tokio::select! {

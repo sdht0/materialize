@@ -184,28 +184,6 @@ pub enum FrontendMessage {
     },
 }
 
-impl FrontendMessage {
-    pub fn name(&self) -> &'static str {
-        match self {
-            FrontendMessage::Query { .. } => "query",
-            FrontendMessage::Parse { .. } => "parse",
-            FrontendMessage::DescribeStatement { .. } => "describe_statement",
-            FrontendMessage::DescribePortal { .. } => "describe_portal",
-            FrontendMessage::Bind { .. } => "bind",
-            FrontendMessage::Execute { .. } => "execute",
-            FrontendMessage::Flush => "flush",
-            FrontendMessage::Sync => "sync",
-            FrontendMessage::CloseStatement { .. } => "close_statement",
-            FrontendMessage::ClosePortal { .. } => "close_portal",
-            FrontendMessage::Terminate => "terminate",
-            FrontendMessage::CopyData(_) => "copy_data",
-            FrontendMessage::CopyDone => "copy_done",
-            FrontendMessage::CopyFail(_) => "copy_fail",
-            FrontendMessage::Password { .. } => "password",
-        }
-    }
-}
-
 #[derive(Debug)]
 pub struct ErrorResponse {
     pub severity: Severity,

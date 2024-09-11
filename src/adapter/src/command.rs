@@ -173,6 +173,24 @@ impl Command {
             | Command::AllowWrites { .. } => None,
         }
     }
+    pub fn kind(&self) -> &'static str {
+        match self {
+            Command::CatalogSnapshot { .. } => "CatalogSnapshot",
+            Command::Startup { .. } => "Startup",
+            Command::Execute { .. } => "Execute",
+            Command::Commit { .. } => "Commit",
+            Command::CancelRequest { .. } => "CancelRequest",
+            Command::PrivilegedCancelRequest { .. } => "PrivilegedCancelRequest",
+            Command::GetWebhook { .. } => "GetWebhook",
+            Command::GetSystemVars { .. } => "GetSystemVars",
+            Command::SetSystemVars { .. } => "SetSystemVars",
+            Command::Terminate { .. } => "Terminate",
+            Command::RetireExecute { .. } => "RetireExecute",
+            Command::CheckConsistency { .. } => "CheckConsistency",
+            Command::Dump { .. } => "Dump",
+            Command::AllowWrites { .. } => "AllowWrites",
+        }
+    }
 }
 
 #[derive(Debug)]

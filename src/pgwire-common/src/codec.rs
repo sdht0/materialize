@@ -164,6 +164,15 @@ impl FrontendStartupMessage {
 
         Ok(())
     }
+
+    pub fn kind(&self) -> &'static str {
+        match self {
+            FrontendStartupMessage::Startup { .. } => "startup",
+            FrontendStartupMessage::SslRequest => "ssl_request",
+            FrontendStartupMessage::GssEncRequest => "gss_enc_request",
+            FrontendStartupMessage::CancelRequest { .. } => "cancel_request",
+        }
+    }
 }
 
 impl FrontendMessage {
@@ -200,6 +209,26 @@ impl FrontendMessage {
         dst[base..base + 4].copy_from_slice(&len.to_be_bytes());
 
         Ok(())
+    }
+
+    pub fn name(&self) -> &'static str {
+        match self {
+            FrontendMessage::Query { .. } => "query",
+            FrontendMessage::Parse { .. } => "parse",
+            FrontendMessage::DescribeStatement { .. } => "describe_statement",
+            FrontendMessage::DescribePortal { .. } => "describe_portal",
+            FrontendMessage::Bind { .. } => "bind",
+            FrontendMessage::Execute { .. } => "execute",
+            FrontendMessage::Flush => "flush",
+            FrontendMessage::Sync => "sync",
+            FrontendMessage::CloseStatement { .. } => "close_statement",
+            FrontendMessage::ClosePortal { .. } => "close_portal",
+            FrontendMessage::Terminate => "terminate",
+            FrontendMessage::CopyData(_) => "copy_data",
+            FrontendMessage::CopyDone => "copy_done",
+            FrontendMessage::CopyFail(_) => "copy_fail",
+            FrontendMessage::Password { .. } => "password",
+        }
     }
 }
 
