@@ -25,12 +25,22 @@ macro_rules! mzdbgvar {
     ($func:literal, $i:expr) => {
         if workspace_hack::SDH_LOGGER.load(std::sync::atomic::Ordering::Acquire) {
             eprintln!(
-                "\nsdh [file:///Users/siddharthasahu/Downloads/installations/materialize/{}:{}] {}(): {} = {:?}",
+                "[file:///Users/siddharthasahu/Downloads/installations/materialize/{}:{}] {}(): {} = {:?}",
                 file!(),
                 line!(),
                 $func,
                 stringify!($i),
                 $i
+            );
+        }
+    };
+    ($func:literal) => {
+        if workspace_hack::SDH_LOGGER.load(std::sync::atomic::Ordering::Acquire) {
+            eprintln!(
+                "[file:///Users/siddharthasahu/Downloads/installations/materialize/{}:{}] #mark = {}",
+                file!(),
+                line!(),
+                $func,
             );
         }
     };

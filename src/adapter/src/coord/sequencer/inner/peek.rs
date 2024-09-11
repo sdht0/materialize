@@ -59,6 +59,19 @@ use tracing::{Instrument, Span};
 impl Staged for PeekStage {
     type Ctx = ExecuteContext;
 
+    fn kind(&self) -> &'static str {
+        match self {
+            PeekStage::LinearizeTimestamp(_) => "PeekStage::LinearizeTimestamp",
+            PeekStage::RealTimeRecency(_) => "PeekStage::RealTimeRecency",
+            PeekStage::TimestampReadHold(_) => "PeekStage::TimestampReadHold",
+            PeekStage::Optimize(_) => "PeekStage::Optimize",
+            PeekStage::Finish(_) => "PeekStage::Finish",
+            PeekStage::ExplainPlan(_) => "PeekStage::ExplainPlan",
+            PeekStage::ExplainPushdown(_) => "PeekStage::ExplainPushdown",
+            PeekStage::CopyTo(_) => "PeekStage::CopyTo",
+        }
+    }
+
     fn validity(&mut self) -> &mut PlanValidity {
         match self {
             PeekStage::LinearizeTimestamp(stage) => &mut stage.validity,

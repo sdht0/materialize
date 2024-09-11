@@ -47,6 +47,7 @@ impl<'a> Explainable<'a, FastPathPlan> {
                 annotations: BTreeMap::default(),
             },
         )];
+        workspace_hack::mzdbgvar!("Explainable::as_explain_multi_plan");
 
         let sources = vec![];
 

@@ -43,6 +43,7 @@ where
         );
 
         let mode = HumanizedExplain::new(self.context.config.redacted);
+        workspace_hack::mzdbgvar!("DisplayText for ExplainSinglePlan:fmt_text", mode);
 
         if let Some(finishing) = &self.context.finishing {
             if ctx.config.humanized_exprs {
@@ -65,6 +66,7 @@ where
         if let Some(target_cluster) = self.context.target_cluster {
             writeln!(f)?;
             writeln!(f, "Target cluster: {}", target_cluster)?;
+            workspace_hack::mzdbgvar!("DisplayText for ExplainSinglePlan:fmt_text", target_cluster);
         }
 
         if !self.context.optimizer_notices.is_empty() {
@@ -161,6 +163,7 @@ where
         if let Some(target_cluster) = self.context.target_cluster {
             writeln!(f)?;
             writeln!(f, "Target cluster: {}", target_cluster)?;
+            workspace_hack::mzdbgvar!("DisplayText for ExplainMultiPlan:fmt_text", target_cluster);
         }
 
         if !(self.context.config.no_notices || self.context.optimizer_notices.is_empty()) {

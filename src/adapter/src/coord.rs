@@ -913,9 +913,24 @@ pub(crate) enum StageResult<T> {
     Response(ExecuteResponse),
 }
 
+impl<T> StageResult<T> {
+    pub fn kind(&self) -> &'static str {
+        match self {
+            StageResult::Handle(_) => "StageResult::Handle",
+            StageResult::HandleRetire(_) => "StageResult::HandleRetire",
+            StageResult::Immediate(_) => "StageResult::Immediate",
+            StageResult::Response(_) => "StageResult::Response",
+        }
+    }
+}
+
 /// Common functionality for [Coordinator::sequence_staged].
 pub(crate) trait Staged: Send + Debug {
     type Ctx: StagedContext;
+
+    fn kind(&self) -> &'static str {
+        ""
+    }
 
     fn validity(&mut self) -> &mut PlanValidity;
 

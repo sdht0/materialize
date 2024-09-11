@@ -187,20 +187,23 @@ impl Coordinator {
             } else {
                 cancel_enabled = false
             };
+            workspace_hack::mzdbgvar!("Coordinator::sequence_staged", i);
+            workspace_hack::mzdbgvar!("Coordinator::sequence_staged", stage.kind());
             let next = stage
                 .stage(self, &mut ctx)
                 .instrument(parent_span.clone())
                 .await;
             let res = return_if_err!(next, ctx);
-            workspace_hack::mzdbgvar!("sequence_staged", i);
-            workspace_hack::mzdbgvar!("sequence_staged", res);
+            workspace_hack::mzdbgvar!("Coordinator::sequence_staged", res.kind());
+            workspace_hack::mzdbgvar!("Coordinator::sequence_staged", res);
             i += 1;
             stage = match res {
                 StageResult::Handle(handle) => {
                     let internal_cmd_tx = self.internal_cmd_tx.clone();
                     self.handle_spawn(ctx, handle, cancel_enabled, move |ctx, next| {
-                        let m = next.message(ctx, parent_span);
-                        let _ = internal_cmd_tx.send(m);
+                        let msg = next.message(ctx, parent_span);
+                        workspace_hack::mzdbgvar!("Coordinator::sequence_staged", msg.kind());
+                        let _ = internal_cmd_tx.send(msg);
                     });
                     return;
                 }
