@@ -1352,7 +1352,6 @@ impl fmt::Display for Datum<'_> {
             Datum::String(s) => {
                 f.write_str("\"")?;
                 for c in s.chars() {
-                    workspace_hack::mzdbgvar!("fmt", c);
                     if c == '"' {
                         f.write_str("\\\"")?;
                     } else if c == '\r' {
