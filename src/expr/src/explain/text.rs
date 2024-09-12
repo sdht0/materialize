@@ -1409,11 +1409,10 @@ fn write_first_rows(
     let mode = HumanizedExplain::new(redacted);
     for (row, diff) in first_rows {
         let row = mode.expr(*row, None);
-        let escaped_newlines = row.to_string().replace("\n", "\\n");
         if **diff == 1 {
-            writeln!(f, "{}- {}", ctx, escaped_newlines)?;
+            writeln!(f, "{}- {}", ctx, row)?;
         } else {
-            writeln!(f, "{}- ({} x {})", ctx, escaped_newlines, diff)?;
+            writeln!(f, "{}- ({} x {})", ctx, row, diff)?;
         }
     }
     Ok(())
