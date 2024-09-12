@@ -951,9 +951,13 @@ where
                         &temp_storage,
                         event_time,
                         diff.clone(),
-                        move |time| !until.less_equal(time),
+                        move |time| {
+                            workspace_hack::mzdbgvar!("mfp", time);
+                            !until.less_equal(time)
+                        },
                         &mut row_builder,
                     )
+                    .inspect(|x| workspace_hack::mzdbgvar!("x", x))
                     .map(move |x| match x {
                         Ok((row, event_time, diff)) => {
                             // Copy the whole time, and re-populate event time.

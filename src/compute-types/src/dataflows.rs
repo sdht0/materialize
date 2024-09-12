@@ -25,6 +25,7 @@ use mz_proto::{IntoRustIfSome, ProtoMapEntry, ProtoType, RustType, TryFromProtoE
 use mz_repr::refresh_schedule::RefreshSchedule;
 use mz_repr::{GlobalId, RelationType};
 use mz_storage_types::controller::CollectionMetadata;
+use mz_storage_types::sources::Timeline;
 use proptest::prelude::{any, Arbitrary};
 use proptest::strategy::{BoxedStrategy, Strategy};
 use proptest_derive::Arbitrary;
@@ -73,7 +74,7 @@ pub struct DataflowDescription<P, S: 'static = (), T = mz_repr::Timestamp> {
     pub debug_name: String,
     // Timeline should be epochmilisec
     // Should not have refresh every
-    // pub timeline: Timeline,
+    pub timeline: Timeline,
     // pub discard_temporal_data: bool,
     // changes to the plan:
     // prepare the mfp to filter out data
@@ -153,6 +154,7 @@ impl<T> DataflowDescription<OptimizedMirRelationExpr, (), T> {
             initial_storage_as_of: None,
             refresh_schedule: None,
             debug_name: name,
+            timeline: Timeline::EpochMilliseconds,
         }
     }
 
@@ -555,6 +557,7 @@ where
             initial_storage_as_of: self.initial_storage_as_of.clone(),
             refresh_schedule: self.refresh_schedule.clone(),
             debug_name: self.debug_name.clone(),
+            timeline: self.timeline.clone(),
         }
     }
 }
@@ -594,6 +597,7 @@ impl RustType<ProtoDataflowDescription> for DataflowDescription<FlatPlan, Collec
                 .transpose()?,
             refresh_schedule: proto.refresh_schedule.into_rust()?,
             debug_name: proto.debug_name,
+            timeline: Timeline::EpochMilliseconds, // TODO
         })
     }
 }
@@ -755,6 +759,7 @@ proptest::prop_compose! {
                 None
             },
             debug_name,
+            timeline: Timeline::EpochMilliseconds,
         }
     }
 }

@@ -1090,7 +1090,7 @@ fn run(mut args: Args) -> Result<(), anyhow::Error> {
     }
 
     for line in get_file_lines(".vscode/queries.txt") {
-        println!("************* sdh: query = {line}");
+        println!("*************  sdh: query = {line}");
         let res = client.simple_query(&line)?;
         println!("###### sdh: query = {line} | results:");
         for r in res {
