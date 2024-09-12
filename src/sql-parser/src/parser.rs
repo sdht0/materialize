@@ -113,6 +113,7 @@ impl<T> ParserStatementErrorMapper<T> for Result<T, ParserError> {
 pub fn parse_statements_with_limit(
     sql: &str,
 ) -> Result<Result<Vec<StatementParseResult>, ParserStatementError>, String> {
+    workspace_hack::mzdbgmark!("parse_statements_with_limit");
     if sql.bytes().count() > MAX_STATEMENT_BATCH_SIZE {
         return Err(format!(
             "statement batch size cannot exceed {}",

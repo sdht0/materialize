@@ -30,6 +30,14 @@ use crate::{optimize, AdapterNotice, ExecuteContext, TimelineContext};
 impl Staged for SubscribeStage {
     type Ctx = ExecuteContext;
 
+    fn kind(&self) -> &'static str {
+        match self {
+            SubscribeStage::OptimizeMir(_) => "SubscribeStage::OptimizeMir",
+            SubscribeStage::TimestampOptimizeLir(_) => "SubscribeStage::TimestampOptimizeLir",
+            SubscribeStage::Finish(_) => "SubscribeStage::Finish",
+        }
+    }
+
     fn validity(&mut self) -> &mut PlanValidity {
         match self {
             SubscribeStage::OptimizeMir(stage) => &mut stage.validity,

@@ -55,6 +55,14 @@ use crate::{catalog, AdapterNotice, CollectionIdBundle, ExecuteContext, Timestam
 impl Staged for CreateMaterializedViewStage {
     type Ctx = ExecuteContext;
 
+    fn kind(&self) -> &'static str {
+        match self {
+            CreateMaterializedViewStage::Optimize(_) => "CreateMaterializedViewStage::Optimize",
+            CreateMaterializedViewStage::Finish(_) => "CreateMaterializedViewStage::Finish",
+            CreateMaterializedViewStage::Explain(_) => "CreateMaterializedViewStage::Explain",
+        }
+    }
+
     fn validity(&mut self) -> &mut PlanValidity {
         match self {
             Self::Optimize(stage) => &mut stage.validity,

@@ -38,6 +38,14 @@ use crate::{catalog, AdapterNotice, ExecuteContext, TimestampProvider};
 impl Staged for CreateIndexStage {
     type Ctx = ExecuteContext;
 
+    fn kind(&self) -> &'static str {
+        match self {
+            CreateIndexStage::Optimize(_) => "CreateIndexStage::Optimize",
+            CreateIndexStage::Finish(_) => "CreateIndexStage::Finish",
+            CreateIndexStage::Explain(_) => "CreateIndexStage::Explain",
+        }
+    }
+
     fn validity(&mut self) -> &mut PlanValidity {
         match self {
             Self::Optimize(stage) => &mut stage.validity,

@@ -167,10 +167,10 @@ impl FrontendStartupMessage {
 
     pub fn kind(&self) -> &'static str {
         match self {
-            FrontendStartupMessage::Startup { .. } => "startup",
-            FrontendStartupMessage::SslRequest => "ssl_request",
-            FrontendStartupMessage::GssEncRequest => "gss_enc_request",
-            FrontendStartupMessage::CancelRequest { .. } => "cancel_request",
+            FrontendStartupMessage::Startup { .. } => "FrontendStartupMessage::Startup",
+            FrontendStartupMessage::SslRequest => "FrontendStartupMessage::SslRequest",
+            FrontendStartupMessage::GssEncRequest => "FrontendStartupMessage::GssEncRequest",
+            FrontendStartupMessage::CancelRequest { .. } => "FrontendStartupMessage::CancelRequest",
         }
     }
 }
@@ -213,21 +213,21 @@ impl FrontendMessage {
 
     pub fn name(&self) -> &'static str {
         match self {
-            FrontendMessage::Query { .. } => "query",
-            FrontendMessage::Parse { .. } => "parse",
-            FrontendMessage::DescribeStatement { .. } => "describe_statement",
-            FrontendMessage::DescribePortal { .. } => "describe_portal",
-            FrontendMessage::Bind { .. } => "bind",
-            FrontendMessage::Execute { .. } => "execute",
-            FrontendMessage::Flush => "flush",
-            FrontendMessage::Sync => "sync",
-            FrontendMessage::CloseStatement { .. } => "close_statement",
-            FrontendMessage::ClosePortal { .. } => "close_portal",
-            FrontendMessage::Terminate => "terminate",
-            FrontendMessage::CopyData(_) => "copy_data",
-            FrontendMessage::CopyDone => "copy_done",
-            FrontendMessage::CopyFail(_) => "copy_fail",
-            FrontendMessage::Password { .. } => "password",
+            FrontendMessage::Query { .. } => "FrontendMessage::query",
+            FrontendMessage::Parse { .. } => "FrontendMessage::parse",
+            FrontendMessage::DescribeStatement { .. } => "FrontendMessage::describe_statement",
+            FrontendMessage::DescribePortal { .. } => "FrontendMessage::describe_portal",
+            FrontendMessage::Bind { .. } => "FrontendMessage::bind",
+            FrontendMessage::Execute { .. } => "FrontendMessage::execute",
+            FrontendMessage::Flush => "FrontendMessage::flush",
+            FrontendMessage::Sync => "FrontendMessage::sync",
+            FrontendMessage::CloseStatement { .. } => "FrontendMessage::close_statement",
+            FrontendMessage::ClosePortal { .. } => "FrontendMessage::close_portal",
+            FrontendMessage::Terminate => "FrontendMessage::terminate",
+            FrontendMessage::CopyData(_) => "FrontendMessage::copy_data",
+            FrontendMessage::CopyDone => "FrontendMessage::copy_done",
+            FrontendMessage::CopyFail(_) => "FrontendMessage::copy_fail",
+            FrontendMessage::Password { .. } => "FrontendMessage::password",
         }
     }
 }

@@ -469,6 +469,18 @@ impl Coordinator {
 impl Staged for IntrospectionSubscribeStage {
     type Ctx = ();
 
+    fn kind(&self) -> &'static str {
+        match self {
+            IntrospectionSubscribeStage::OptimizeMir(_) => {
+                "IntrospectionSubscribeStage::OptimizeMir"
+            }
+            IntrospectionSubscribeStage::TimestampOptimizeLir(_) => {
+                "IntrospectionSubscribeStage::TimestampOptimizeLir"
+            }
+            IntrospectionSubscribeStage::Finish(_) => "IntrospectionSubscribeStage::Finish",
+        }
+    }
+
     fn validity(&mut self) -> &mut PlanValidity {
         match self {
             Self::OptimizeMir(stage) => &mut stage.validity,

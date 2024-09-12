@@ -125,6 +125,7 @@ pub async fn run<'a, A>(
 where
     A: AsyncRead + AsyncWrite + AsyncReady + Send + Sync + Unpin,
 {
+    workspace_hack::mzdbgmark!("run");
     if version != VERSION_3 {
         return conn
             .send(ErrorResponse::fatal(
@@ -284,7 +285,7 @@ where
     ));
     {
         let buf_kinds = buf.iter().map(|e| e.kind()).collect::<Vec<_>>();
-        workspace_hack::mzdbgvar!("run", buf_kinds);
+        workspace_hack::mzdbgvar!("run#buf", buf_kinds);
     }
     conn.send_all(buf).await?;
     conn.flush().await?;
@@ -295,6 +296,7 @@ where
         txn_needs_commit: false,
     };
 
+    workspace_hack::mzdbgmark!("run#machine.run");
     select! {
         r = machine.run() => {
             // Errors produced internally (like MAX_REQUEST_SIZE being exceeded) should send an
@@ -435,6 +437,7 @@ where
     #[allow(clippy::manual_async_fn)]
     #[mz_ore::instrument(level = "debug")]
     fn run(mut self) -> impl Future<Output = Result<(), io::Error>> + Send + 'a {
+        workspace_hack::mzdbgmark!("Statemachine::run");
         async move {
             let mut state = State::Ready;
             loop {
@@ -452,6 +455,7 @@ where
 
     #[instrument(level = "debug")]
     async fn advance_ready(&mut self) -> Result<State, io::Error> {
+        workspace_hack::mzdbgmark!("Statemachine::advance_ready");
         // Handle timeouts first, so we don't execute any statements when there's a pending timeout.
         let message = select! {
             biased;
@@ -486,7 +490,7 @@ where
         // only a few message types seem useful.
         let message_name = message.as_ref().map(|m| m.name()).unwrap_or_default();
 
-        workspace_hack::mzdbgvar!("StateMachine::advance_ready", message_name);
+        workspace_hack::mzdbgvar!("StateMachine::advance_ready#message", message_name);
 
         let next_state = match message {
             Some(FrontendMessage::Query { sql }) => {
@@ -592,8 +596,7 @@ where
 
     #[instrument(level = "debug")]
     async fn one_query(&mut self, stmt: Statement<Raw>, sql: String) -> Result<State, io::Error> {
-        workspace_hack::mzdbgvar!("one_query", stmt);
-        workspace_hack::mzdbgvar!("one_query", sql);
+        workspace_hack::mzdbgmark!("Statemachine::one_query");
         // Bind the portal. Note that this does not set the empty string prepared
         // statement.
         const EMPTY_PORTAL: &str = "";
@@ -611,7 +614,7 @@ where
             .get_portal_unverified(EMPTY_PORTAL)
             .map(|portal| portal.desc.clone())
             .expect("unnamed portal should be present");
-        workspace_hack::mzdbgvar!("one_query", stmt_desc);
+        workspace_hack::mzdbgvar!("Statemachine::one_query#stmt_desc", stmt_desc);
         if !stmt_desc.param_types.is_empty() {
             return self
                 .error(ErrorResponse::error(
@@ -632,6 +635,7 @@ where
             }
         }
 
+        workspace_hack::mzdbgmark!("Statemachine::one_query#execute");
         let result = match self
             .adapter_client
             .execute(EMPTY_PORTAL.to_string(), self.conn.wait_closed(), None)
@@ -639,7 +643,7 @@ where
         {
             Ok((response, execute_started)) => {
                 self.send_pending_notices().await?;
-                workspace_hack::mzdbgvar!("one_query", response);
+                workspace_hack::mzdbgvar!("Statemachine::one_query", response);
                 self.send_execute_response(
                     response,
                     stmt_desc.relation_desc,
@@ -668,7 +672,7 @@ where
         if self.txn_needs_commit {
             self.commit_transaction().await?;
         }
-        // start_transaction can't error (but assert that just in case it changes in
+        // start_transaction can't error, but assert that just in case it changes in
         // the future.
         let res = self.adapter_client.start_transaction(Some(num_stmts));
         assert_ok!(res);
@@ -676,6 +680,7 @@ where
     }
 
     fn parse_sql<'b>(&self, sql: &'b str) -> Result<Vec<StatementParseResult<'b>>, ErrorResponse> {
+        workspace_hack::mzdbgmark!("Statemachine::parse_sql");
         match self.adapter_client.parse(sql) {
             Ok(result) => result.map_err(|e| {
                 // Convert our 0-based byte position to pgwire's 1-based character
@@ -692,6 +697,9 @@ where
     // From https://www.postgresql.org/docs/current/protocol-flow.html
     #[instrument(level = "debug")]
     async fn query(&mut self, sql: String) -> Result<State, io::Error> {
+        workspace_hack::mzdbgmark!("Statemachine::query");
+        workspace_hack::mzdbgvar!("Statemachine::one_query", sql);
+        workspace_hack::mzdbgmark!("Statemachine::query#parse_sql()->Vec<StatementParseResult>");
         // Parse first before doing any transaction checking.
         let stmts = match self.parse_sql(&sql) {
             Ok(stmts) => stmts,
@@ -720,6 +728,7 @@ where
             // statement.
             self.ensure_transaction(num_stmts).await?;
 
+            workspace_hack::mzdbgmark!("Statemachine::query#one_query()->State");
             match self.one_query(stmt, sql.to_string()).await? {
                 State::Ready => (),
                 State::Drain => break,

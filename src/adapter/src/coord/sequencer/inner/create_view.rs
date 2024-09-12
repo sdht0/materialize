@@ -39,6 +39,14 @@ use crate::{catalog, AdapterNotice, ExecuteContext};
 impl Staged for CreateViewStage {
     type Ctx = ExecuteContext;
 
+    fn kind(&self) -> &'static str {
+        match self {
+            CreateViewStage::Optimize(_) => "CreateViewStage::Optimize",
+            CreateViewStage::Finish(_) => "CreateViewStage::Finish",
+            CreateViewStage::Explain(_) => "CreateViewStage::Explain",
+        }
+    }
+
     fn validity(&mut self) -> &mut PlanValidity {
         match self {
             Self::Optimize(stage) => &mut stage.validity,

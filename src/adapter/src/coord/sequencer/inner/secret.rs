@@ -33,6 +33,16 @@ use crate::{catalog, AdapterError, AdapterNotice, ExecuteContext, ExecuteRespons
 impl Staged for SecretStage {
     type Ctx = ExecuteContext;
 
+    fn kind(&self) -> &'static str {
+        match self {
+            SecretStage::CreateEnsure(_) => "SecretStage::CreateEnsure",
+            SecretStage::CreateFinish(_) => "SecretStage::CreateFinish",
+            SecretStage::RotateKeysEnsure(_) => "SecretStage::RotateKeysEnsure",
+            SecretStage::RotateKeysFinish(_) => "SecretStage::RotateKeysFinish",
+            SecretStage::Alter(_) => "SecretStage::Alter",
+        }
+    }
+
     fn validity(&mut self) -> &mut crate::coord::PlanValidity {
         match self {
             SecretStage::CreateFinish(stage) => &mut stage.validity,

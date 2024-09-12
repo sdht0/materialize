@@ -11,6 +11,7 @@
 
 use std::collections::BTreeMap;
 use std::fmt;
+use std::fmt::Debug;
 use std::sync::atomic::Ordering;
 
 use mz_ore::assert::SOFT_ASSERTIONS;
@@ -86,7 +87,7 @@ where
     }
 }
 
-impl<'a, T: 'a> DisplayText for ExplainMultiPlan<'a, T>
+impl<'a, T: 'a + Debug> DisplayText for ExplainMultiPlan<'a, T>
 where
     T: DisplayText<PlanRenderingContext<'a, T>> + Ord,
 {
@@ -94,6 +95,7 @@ where
         let mut ctx = RenderingContext::new(Indent::default(), self.context.humanizer);
 
         let mode = HumanizedExplain::new(self.context.config.redacted);
+        workspace_hack::mzdbgvar!("DisplayText>ExplainMultiPlan::fmt_text", mode);
 
         // Render plans.
         for (no, (id, plan)) in self.plans.iter().enumerate() {
@@ -109,6 +111,8 @@ where
             }
 
             writeln!(f, "{}{}:", ctx.indent, id)?;
+            workspace_hack::mzdbgvar!("DisplayText>ExplainMultiPlan::fmt_text", id);
+            workspace_hack::mzdbgvar!("DisplayText>ExplainMultiPlan::fmt_text", plan.plan);
             ctx.indented(|ctx| {
                 match &self.context.finishing {
                     // If present, a RowSetFinishing always applies to the first rendered plan.
@@ -163,7 +167,6 @@ where
         if let Some(target_cluster) = self.context.target_cluster {
             writeln!(f)?;
             writeln!(f, "Target cluster: {}", target_cluster)?;
-            workspace_hack::mzdbgvar!("DisplayText for ExplainMultiPlan:fmt_text", target_cluster);
         }
 
         if !(self.context.config.no_notices || self.context.optimizer_notices.is_empty()) {
@@ -1406,10 +1409,11 @@ fn write_first_rows(
     let mode = HumanizedExplain::new(redacted);
     for (row, diff) in first_rows {
         let row = mode.expr(*row, None);
+        let escaped_newlines = row.to_string().replace("\n", "\\n");
         if **diff == 1 {
-            writeln!(f, "{}- {}", ctx, row)?;
+            writeln!(f, "{}- {}", ctx, escaped_newlines)?;
         } else {
-            writeln!(f, "{}- ({} x {})", ctx, row, diff)?;
+            writeln!(f, "{}- ({} x {})", ctx, escaped_newlines, diff)?;
         }
     }
     Ok(())

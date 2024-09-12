@@ -25,24 +25,52 @@ macro_rules! mzdbgvar {
     ($func:literal, $i:expr) => {
         if workspace_hack::SDH_LOGGER.load(std::sync::atomic::Ordering::Acquire) {
             eprintln!(
-                "[file:///Users/siddharthasahu/Downloads/installations/materialize/{}:{}] {}(): {} = {:?}",
+                "[file:///Users/siddharthasahu/Downloads/installations/materialize/{}:{} {:?}:{:?}] {}(): {} = {:?}",
                 file!(),
                 line!(),
+                std::thread::current().id(),
+                std::thread::current().name(),
                 $func,
                 stringify!($i),
                 $i
             );
         }
     };
+}
+#[macro_export]
+macro_rules! mzdbgmark {
     ($func:literal) => {
-        if workspace_hack::SDH_LOGGER.load(std::sync::atomic::Ordering::Acquire) {
-            eprintln!(
-                "[file:///Users/siddharthasahu/Downloads/installations/materialize/{}:{}] #mark = {}",
-                file!(),
-                line!(),
-                $func,
-            );
-        }
+        eprintln!(
+            "#mark [file:///Users/siddharthasahu/Downloads/installations/materialize/{}:{} {:?}:{:?}] {}()",
+            file!(),
+            line!(),
+            std::thread::current().id(),
+            std::thread::current().name(),
+            $func,
+        );
+    };
+    ($func:literal, $msg:literal) => {
+        eprintln!(
+            "#mark [file:///Users/siddharthasahu/Downloads/installations/materialize/{}:{} {:?}:{:?}] {}(): {}",
+            file!(),
+            line!(),
+            std::thread::current().id(),
+            std::thread::current().name(),
+            $func,
+            $msg,
+        );
+    };
+    ($func:literal, $i:expr) => {
+        eprintln!(
+            "#mark [file:///Users/siddharthasahu/Downloads/installations/materialize/{}:{} {:?}:{:?}] {}(): {} = {:?}",
+            file!(),
+            line!(),
+            std::thread::current().id(),
+            std::thread::current().name(),
+            $func,
+            stringify!($i),
+            $i
+        );
     };
 }
 // enum JoinOrigin {

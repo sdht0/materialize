@@ -37,6 +37,14 @@ use super::return_if_err;
 impl Staged for ClusterStage {
     type Ctx = ExecuteContext;
 
+    fn kind(&self) -> &'static str {
+        match self {
+            ClusterStage::Alter(_) => "ClusterStage::Alter",
+            ClusterStage::WaitForHydrated(_) => "ClusterStage::WaitForHydrated",
+            ClusterStage::Finalize(_) => "ClusterStage::Finalize",
+        }
+    }
+
     fn validity(&mut self) -> &mut PlanValidity {
         match self {
             Self::Alter(stage) => &mut stage.validity,

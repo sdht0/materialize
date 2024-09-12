@@ -202,7 +202,10 @@ impl Coordinator {
                     let internal_cmd_tx = self.internal_cmd_tx.clone();
                     self.handle_spawn(ctx, handle, cancel_enabled, move |ctx, next| {
                         let msg = next.message(ctx, parent_span);
-                        workspace_hack::mzdbgvar!("Coordinator::sequence_staged", msg.kind());
+                        workspace_hack::mzdbgvar!(
+                            "Coordinator::sequence_staged#send_msg",
+                            msg.kind()
+                        );
                         let _ = internal_cmd_tx.send(msg);
                     });
                     return;

@@ -597,6 +597,7 @@ fn aws_secrets_controller_key_alias(env_id: &EnvironmentId) -> String {
 }
 
 fn main() {
+    workspace_hack::mzdbgmark!("main");
     let args = cli::parse_args(CliConfig {
         env_prefix: Some("MZ_"),
         enable_version_flag: true,
@@ -607,6 +608,7 @@ fn main() {
 }
 
 fn run(mut args: Args) -> Result<(), anyhow::Error> {
+    workspace_hack::mzdbgmark!("run");
     mz_ore::panic::install_enhanced_handler();
     let envd_start = Instant::now();
 
@@ -626,6 +628,7 @@ fn run(mut args: Args) -> Result<(), anyhow::Error> {
 
     // Start Tokio runtime.
 
+    workspace_hack::mzdbgmark!("run#tokio_runtime");
     let ncpus_useful = usize::max(1, cmp::min(num_cpus::get(), num_cpus::get_physical()));
     let runtime = Arc::new(
         tokio::runtime::Builder::new_multi_thread()
@@ -857,6 +860,7 @@ fn run(mut args: Args) -> Result<(), anyhow::Error> {
         }
     };
 
+    workspace_hack::mzdbgmark!("run#persist");
     let _server = runtime.spawn_named(
         || "persist::rpc::server",
         async move {
@@ -934,9 +938,11 @@ fn run(mut args: Args) -> Result<(), anyhow::Error> {
         envd_start.elapsed()
     );
 
+    workspace_hack::mzdbgmark!("run#server");
     let serve_start = Instant::now();
     info!("startup: envd init: serving beginning");
     let server = runtime.block_on(async {
+        workspace_hack::mzdbgmark!("run#listeners");
         let listeners = Listeners::bind(ListenersConfig {
             sql_listen_addr: args.sql_listen_addr,
             http_listen_addr: args.http_listen_addr,
@@ -950,6 +956,7 @@ fn run(mut args: Args) -> Result<(), anyhow::Error> {
             persist_clients,
             metrics: Arc::new(mz_catalog::durable::Metrics::new(&metrics_registry)),
         };
+        workspace_hack::mzdbgmark!("run#serve");
         let server = listeners
             .serve(mz_environmentd::Config {
                 // Special modes.
@@ -1061,7 +1068,7 @@ fn run(mut args: Args) -> Result<(), anyhow::Error> {
 
     println!(" Root trace ID: {id}");
 
-    println!("sdh: here");
+    workspace_hack::mzdbgmark!("run", "sdh: here");
     SDH_LOGGER.store(true, Ordering::Release);
 
     let mut client = postgres::Client::connect(
@@ -1093,7 +1100,7 @@ fn run(mut args: Args) -> Result<(), anyhow::Error> {
 
     // // Block forever.
     // loop {
-    // std::thread::park();
+    //     std::thread::park();
     // }
     Ok(())
 }

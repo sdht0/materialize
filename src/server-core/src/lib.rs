@@ -171,6 +171,7 @@ impl ListenerHandle {
 pub async fn listen(
     addr: &SocketAddr,
 ) -> Result<(ListenerHandle, Pin<Box<dyn ConnectionStream>>), io::Error> {
+    workspace_hack::mzdbgmark!("listen");
     let listener = TcpListener::bind(addr).await?;
     let local_addr = listener.local_addr()?;
     let (trigger, trigger_rx) = trigger::channel();
@@ -226,7 +227,7 @@ where
     C: ConnectionStream,
 {
     let task_name = format!("handle_{}_connection", S::NAME);
-    workspace_hack::mzdbgvar!("serve", task_name);
+    workspace_hack::mzdbgmark!("serve", task_name);
     let mut set = JoinSet::new();
     loop {
         tokio::select! {
@@ -262,6 +263,7 @@ where
                 }
                 let conn = Connection::new(conn);
                 let conn_uuid = conn.uuid_handle();
+                workspace_hack::mzdbgmark!("serve#handle_connection", task_name);
                 let fut = server.handle_connection(conn);
                 set.spawn_named(|| &task_name, async move {
                     let guard = scopeguard::guard((), |_| {

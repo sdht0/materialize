@@ -238,6 +238,7 @@ impl Listeners {
             internal_http_listen_addr,
         }: ListenersConfig,
     ) -> Result<Listeners, io::Error> {
+        workspace_hack::mzdbgmark!("Listeners::bind");
         let sql = mz_server_core::listen(&sql_listen_addr).await?;
         let http = mz_server_core::listen(&http_listen_addr).await?;
         let balancer_sql = mz_server_core::listen(&balancer_sql_listen_addr).await?;
@@ -273,6 +274,7 @@ impl Listeners {
     /// Returns a handle to the server once it is fully booted.
     #[instrument(name = "environmentd::serve")]
     pub async fn serve(self, config: Config) -> Result<Server, AdapterError> {
+        workspace_hack::mzdbgmark!("Listeners::serve");
         let serve_start = Instant::now();
         info!("startup: envd serve: beginning");
         info!("startup: envd serve: preamble beginning");

@@ -321,58 +321,64 @@ impl Message {
     pub const fn kind(&self) -> &'static str {
         match self {
             Message::Command(_, msg) => match msg {
-                Command::CatalogSnapshot { .. } => "command-catalog_snapshot",
-                Command::Startup { .. } => "command-startup",
-                Command::Execute { .. } => "command-execute",
-                Command::Commit { .. } => "command-commit",
-                Command::CancelRequest { .. } => "command-cancel_request",
-                Command::PrivilegedCancelRequest { .. } => "command-privileged_cancel_request",
-                Command::GetWebhook { .. } => "command-get_webhook",
-                Command::GetSystemVars { .. } => "command-get_system_vars",
-                Command::SetSystemVars { .. } => "command-set_system_vars",
-                Command::Terminate { .. } => "command-terminate",
-                Command::RetireExecute { .. } => "command-retire_execute",
-                Command::CheckConsistency { .. } => "command-check_consistency",
-                Command::Dump { .. } => "command-dump",
-                Command::AllowWrites { .. } => "command-allow-writes",
+                Command::CatalogSnapshot { .. } => "Message::Command::CatalogSnapshot",
+                Command::Startup { .. } => "Message::Command::Startup",
+                Command::Execute { .. } => "Message::Command::Execute",
+                Command::Commit { .. } => "Message::Command::Commit",
+                Command::CancelRequest { .. } => "Message::Command::CancelRequest",
+                Command::PrivilegedCancelRequest { .. } => {
+                    "Message::Command::PrivilegedCancelRequest"
+                }
+                Command::GetWebhook { .. } => "Message::Command::get_webhook",
+                Command::GetSystemVars { .. } => "Message::Command::GetSystemVars",
+                Command::SetSystemVars { .. } => "Message::Command::SetSystemVars",
+                Command::Terminate { .. } => "Message::Command::Terminate",
+                Command::RetireExecute { .. } => "Message::Command::RetireExecute",
+                Command::CheckConsistency { .. } => "Message::Command::CheckConsistency",
+                Command::Dump { .. } => "Message::Command::dump",
+                Command::AllowWrites { .. } => "Message::Command::allow-writes",
             },
-            Message::ControllerReady => "controller_ready",
-            Message::PurifiedStatementReady(_) => "purified_statement_ready",
-            Message::CreateConnectionValidationReady(_) => "create_connection_validation_ready",
-            Message::WriteLockGrant(_) => "write_lock_grant",
-            Message::GroupCommitInitiate(..) => "group_commit_initiate",
-            Message::GroupCommitApply(..) => "group_commit_apply",
-            Message::AdvanceTimelines => "advance_timelines",
-            Message::ClusterEvent(_) => "cluster_event",
-            Message::CancelPendingPeeks { .. } => "cancel_pending_peeks",
-            Message::LinearizeReads => "linearize_reads",
-            Message::StorageUsageSchedule => "storage_usage_schedule",
-            Message::StorageUsageFetch => "storage_usage_fetch",
-            Message::StorageUsageUpdate(_) => "storage_usage_update",
-            Message::StorageUsagePrune(_) => "storage_usage_prune",
-            Message::RetireExecute { .. } => "retire_execute",
+            Message::ControllerReady => "Message::controller_ready",
+            Message::PurifiedStatementReady(_) => "Message::purified_statement_ready",
+            Message::CreateConnectionValidationReady(_) => {
+                "Message::CreateConnectionValidationReady"
+            }
+            Message::WriteLockGrant(_) => "Message::write_lock_grant",
+            Message::GroupCommitInitiate(..) => "Message::group_commit_initiate",
+            Message::GroupCommitApply(..) => "Message::group_commit_apply",
+            Message::AdvanceTimelines => "Message::advance_timelines",
+            Message::ClusterEvent(_) => "Message::cluster_event",
+            Message::CancelPendingPeeks { .. } => "Message::cancel_pending_peeks",
+            Message::LinearizeReads => "Message::linearize_reads",
+            Message::StorageUsageSchedule => "Message::storage_usage_schedule",
+            Message::StorageUsageFetch => "Message::storage_usage_fetch",
+            Message::StorageUsageUpdate(_) => "Message::storage_usage_update",
+            Message::StorageUsagePrune(_) => "Message::storage_usage_prune",
+            Message::RetireExecute { .. } => "Message::retire_execute",
             Message::ExecuteSingleStatementTransaction { .. } => {
-                "execute_single_statement_transaction"
+                "Message::ExecuteSingleStatementTransaction"
             }
-            Message::PeekStageReady { .. } => "peek_stage_ready",
-            Message::ExplainTimestampStageReady { .. } => "explain_timestamp_stage_ready",
-            Message::CreateIndexStageReady { .. } => "create_index_stage_ready",
-            Message::CreateViewStageReady { .. } => "create_view_stage_ready",
+            Message::PeekStageReady { .. } => "Message::peek_stage_ready",
+            Message::ExplainTimestampStageReady { .. } => "Message::explain_timestamp_stage_ready",
+            Message::CreateIndexStageReady { .. } => "Message::create_index_stage_ready",
+            Message::CreateViewStageReady { .. } => "Message::create_view_stage_ready",
             Message::CreateMaterializedViewStageReady { .. } => {
-                "create_materialized_view_stage_ready"
+                "Message::CreateMaterializedViewStageReady"
             }
-            Message::SubscribeStageReady { .. } => "subscribe_stage_ready",
+            Message::SubscribeStageReady { .. } => "Message::subscribe_stage_ready",
             Message::IntrospectionSubscribeStageReady { .. } => {
-                "introspection_subscribe_stage_ready"
+                "Message::IntrospectionSubscribeStageReady"
             }
-            Message::SecretStageReady { .. } => "secret_stage_ready",
-            Message::ClusterStageReady { .. } => "cluster_stage_ready",
-            Message::DrainStatementLog => "drain_statement_log",
-            Message::AlterConnectionValidationReady(..) => "alter_connection_validation_ready",
-            Message::PrivateLinkVpcEndpointEvents(_) => "private_link_vpc_endpoint_events",
-            Message::CheckSchedulingPolicies => "check_scheduling_policies",
-            Message::SchedulingDecisions { .. } => "scheduling_decision",
-            Message::DeferredStatementReady => "deferred_statement_ready",
+            Message::SecretStageReady { .. } => "Message::secret_stage_ready",
+            Message::ClusterStageReady { .. } => "Message::cluster_stage_ready",
+            Message::DrainStatementLog => "Message::drain_statement_log",
+            Message::AlterConnectionValidationReady(..) => {
+                "Message::alter_connection_validation_ready"
+            }
+            Message::PrivateLinkVpcEndpointEvents(_) => "Message::private_link_vpc_endpoint_events",
+            Message::CheckSchedulingPolicies => "Message::check_scheduling_policies",
+            Message::SchedulingDecisions { .. } => "Message::scheduling_decision",
+            Message::DeferredStatementReady => "Message::deferred_statement_ready",
         }
     }
 }
@@ -928,9 +934,7 @@ impl<T> StageResult<T> {
 pub(crate) trait Staged: Send + Debug {
     type Ctx: StagedContext;
 
-    fn kind(&self) -> &'static str {
-        ""
-    }
+    fn kind(&self) -> &'static str;
 
     fn validity(&mut self) -> &mut PlanValidity;
 
@@ -3493,6 +3497,7 @@ pub fn serve(
         clusters_hydrated_trigger,
     }: Config,
 ) -> BoxFuture<'static, Result<(Handle, Client), AdapterError>> {
+    workspace_hack::mzdbgmark!("serve");
     async move {
         let coord_start = Instant::now();
         info!("startup: coordinator init: beginning");

@@ -31,6 +31,14 @@ use crate::{CollectionIdBundle, ExecuteContext, TimelineContext, TimestampExplan
 impl Staged for ExplainTimestampStage {
     type Ctx = ExecuteContext;
 
+    fn kind(&self) -> &'static str {
+        match self {
+            ExplainTimestampStage::Optimize(_) => "ExplainTimestampStage::Optimize",
+            ExplainTimestampStage::RealTimeRecency(_) => "ExplainTimestampStage::RealTimeRecency",
+            ExplainTimestampStage::Finish(_) => "ExplainTimestampStage::Finish",
+        }
+    }
+
     fn validity(&mut self) -> &mut PlanValidity {
         match self {
             ExplainTimestampStage::Optimize(stage) => &mut stage.validity,

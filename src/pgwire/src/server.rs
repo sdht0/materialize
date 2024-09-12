@@ -71,6 +71,7 @@ impl mz_server_core::Server for Server {
     const NAME: &'static str = "pgwire";
 
     fn handle_connection(&self, conn: Connection) -> ConnectionHandler {
+        workspace_hack::mzdbgmark!("<Server as Server>::handle_connection");
         // Using fully-qualified syntax means we won't accidentally call
         // ourselves (i.e., silently infinitely recurse) if the name or type of
         // `crate::Server::handle_connection` changes.
@@ -96,6 +97,7 @@ impl Server {
         &self,
         conn: Connection,
     ) -> impl Future<Output = Result<(), anyhow::Error>> + 'static + Send {
+        workspace_hack::mzdbgmark!("Server::handle_connection");
         let mut adapter_client = self.adapter_client.clone();
         let frontegg = self.frontegg.clone();
         let tls = self.tls.clone();
@@ -114,7 +116,7 @@ impl Server {
 
                         match &message {
                             Some(message) => {
-                                workspace_hack::mzdbgvar!("Server::handle_connection", message.kind());
+                                workspace_hack::mzdbgvar!("Server::handle_connection#message", message.kind());
                                 trace!("cid={} recv={:?}", conn_id, message)
                             },
                             None => trace!("cid={} recv=<eof>", conn_id),
@@ -143,6 +145,7 @@ impl Server {
 
                                 let mut conn = FramedConn::new(conn_id.clone(), conn);
 
+                                workspace_hack::mzdbgmark!("Server::handle_connection#FrontendStartupMessage::Startup#run");
                                 protocol::run(protocol::RunParams {
                                     tls_mode: tls.as_ref().map(|tls| tls.mode),
                                     adapter_client,

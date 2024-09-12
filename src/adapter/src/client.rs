@@ -456,6 +456,7 @@ impl SessionClient {
         &self,
         sql: &'a str,
     ) -> Result<Result<Vec<StatementParseResult<'a>>, ParserStatementError>, String> {
+        workspace_hack::mzdbgmark!("SessionClient::parse");
         match mz_sql::parse::parse_with_limit(sql) {
             Ok(Err(e)) => {
                 self.track_statement_parse_failure(&e);
@@ -592,6 +593,7 @@ impl SessionClient {
         cancel_future: impl Future<Output = std::io::Error> + Send,
         outer_ctx_extra: Option<ExecuteContextExtra>,
     ) -> Result<(ExecuteResponse, Instant), AdapterError> {
+        workspace_hack::mzdbgmark!("SessionClient::execute");
         let execute_started = Instant::now();
         let response = self
             .send_with_cancel(
