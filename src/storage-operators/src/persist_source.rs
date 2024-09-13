@@ -20,11 +20,13 @@ use std::pin::Pin;
 use std::sync::Arc;
 use std::time::Instant;
 
+use crate::metrics::BackpressureMetrics;
 use differential_dataflow::lattice::Lattice;
 use futures::{future::Either, StreamExt};
 use mz_expr::{ColumnSpecs, Interpreter, MfpPlan, ResultSpec, UnmaterializableFunc};
 use mz_ore::cast::CastFrom;
 use mz_ore::collections::CollectionExt;
+use mz_ore::now::SYSTEM_TIME;
 use mz_ore::vec::VecExt;
 use mz_persist_client::cache::PersistClientCache;
 use mz_persist_client::cfg::{PersistConfig, RetryParameters};
@@ -62,8 +64,6 @@ use timely::scheduling::Activator;
 use timely::PartialOrder;
 use tokio::sync::mpsc::UnboundedSender;
 use tracing::trace;
-
-use crate::metrics::BackpressureMetrics;
 
 /// This opaque token represents progress within a timestamp, allowing finer-grained frontier
 /// progress than would otherwise be possible.
@@ -579,6 +579,8 @@ impl PendingWork {
             .map(|p| optimize_ignored_data_decode && part_is_error_free && p.ignores_input())
             .unwrap_or(false)
             .then(|| (SourceData(Ok(Row::default())), ()));
+        let now = (SYSTEM_TIME.clone())();
+        let t_limit = Timestamp::new(now).step_forward_by(&Timestamp::new(now + 15));
         while let Some(((key, val), time, diff)) =
             fetched_part.next_with_storage(&mut row_buf, &mut None, row_override.clone())
         {
@@ -602,9 +604,13 @@ impl PendingWork {
                             &arena,
                             time,
                             diff,
-                            |time| !until.less_equal(time),
+                            |time| {
+                                println!("here: time3 = {until:?} | {time:?}");
+                                !until.less_equal(time) && time < &t_limit
+                            },
                             row_builder,
                         ) {
+                            println!("here: result3 = {result:?}");
                             if let Some(_stats) = &is_filter_pushdown_audit {
                                 // NB: The tag added by this scope is used for alerting. The panic
                                 // message may be changed arbitrarily, but the tag key and val must

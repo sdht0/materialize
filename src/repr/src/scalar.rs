@@ -8,7 +8,7 @@
 // by the Apache License, Version 2.0.
 
 use std::collections::BTreeMap;
-use std::fmt::{self, Debug, Write};
+use std::fmt::{self, Debug};
 use std::hash::Hash;
 use std::iter;
 use std::ops::Add;

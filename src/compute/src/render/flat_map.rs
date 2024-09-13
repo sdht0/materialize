@@ -154,11 +154,15 @@ fn drain_through_mfp<T>(
             &temp_storage,
             event_time,
             diff * *input_diff,
-            |time| !until.less_equal(time),
+            |time| {
+                println!("here: time2 = {until:?} | {time:?}");
+                !until.less_equal(time)
+            },
             &mut row_builder,
         );
 
         for result in results {
+            println!("here: result2 = {:?}", result);
             match result {
                 Ok((row, event_time, diff)) => {
                     // Copy the whole time, and re-populate event time.

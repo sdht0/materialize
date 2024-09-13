@@ -11,12 +11,12 @@
 
 use std::collections::BTreeMap;
 use std::fmt;
-use std::fmt::{Debug, Pointer, Write};
+use std::fmt::Debug;
 use std::sync::atomic::Ordering;
 
 use mz_ore::assert::SOFT_ASSERTIONS;
 use mz_ore::soft_assert_eq_or_log;
-use mz_ore::str::{closure_to_display, separated, EscapedStr, Indent, IndentLike, StrExt};
+use mz_ore::str::{closure_to_display, separated, Indent, IndentLike, StrExt};
 use mz_repr::explain::text::DisplayText;
 use mz_repr::explain::{
     CompactScalars, ExprHumanizer, HumanizedAttributes, IndexUsageType, Indices,

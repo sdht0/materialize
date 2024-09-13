@@ -952,12 +952,14 @@ where
                         event_time,
                         diff.clone(),
                         move |time| {
-                            workspace_hack::mzdbgvar!("mfp", time);
+                            println!("here: time1 = {until:?} | {time:?}");
                             !until.less_equal(time)
                         },
                         &mut row_builder,
                     )
-                    .inspect(|x| workspace_hack::mzdbgvar!("x", x))
+                    .inspect(|x| {
+                        println!("here: result1 = {:?}", x);
+                    })
                     .map(move |x| match x {
                         Ok((row, event_time, diff)) => {
                             // Copy the whole time, and re-populate event time.

@@ -47,6 +47,7 @@ pub trait StrExt {
     /// assert_eq!(message, r#"unknown user "b@d\"inp!t\"""#);
     /// ```
     fn quoted(&self) -> QuotedStr;
+    /// TODO(sdh)
     fn escaped(&self) -> EscapedStr;
 }
 
