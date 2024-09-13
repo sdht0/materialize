@@ -20,6 +20,7 @@ use enum_kinds::EnumKind;
 use itertools::Itertools;
 use mz_lowertest::MzReflect;
 use mz_ore::cast::CastFrom;
+use mz_ore::str::StrExt;
 use mz_proto::{IntoRustIfSome, ProtoType, RustType, TryFromProtoError};
 use ordered_float::OrderedFloat;
 use proptest::prelude::*;
@@ -1350,21 +1351,7 @@ impl fmt::Display for Datum<'_> {
                 Ok(())
             }
             Datum::String(s) => {
-                f.write_str("\"")?;
-                for c in s.chars() {
-                    if c == '"' {
-                        f.write_str("\\\"")?;
-                    } else if c == '\r' {
-                        f.write_str("\\r")?;
-                    } else if c == '\n' {
-                        f.write_str("\\n")?;
-                    } else if c == '\t' {
-                        f.write_str("\\t")?;
-                    } else {
-                        f.write_char(c)?;
-                    }
-                }
-                f.write_str("\"")
+                write!(f, "{}", s.quoted())
             }
             Datum::Uuid(u) => write!(f, "{}", u),
             Datum::Array(array) => {

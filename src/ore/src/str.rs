@@ -47,11 +47,15 @@ pub trait StrExt {
     /// assert_eq!(message, r#"unknown user "b@d\"inp!t\"""#);
     /// ```
     fn quoted(&self) -> QuotedStr;
+    fn escaped(&self) -> EscapedStr;
 }
 
 impl StrExt for str {
     fn quoted(&self) -> QuotedStr {
         QuotedStr(self)
+    }
+    fn escaped(&self) -> EscapedStr {
+        EscapedStr(self)
     }
 }
 
@@ -76,6 +80,37 @@ impl<'a> fmt::Display for QuotedStr<'a> {
 }
 
 impl<'a> Deref for QuotedStr<'a> {
+    type Target = str;
+
+    fn deref(&self) -> &str {
+        self.0
+    }
+}
+
+/// Displays a string slice surrounded by double quotes with any inner double
+/// quote, tab, and new line characters escaped.
+///
+/// Constructed by [`StrExt::escaped`].
+#[derive(Debug)]
+pub struct EscapedStr<'a>(&'a str);
+
+impl<'a> fmt::Display for EscapedStr<'a> {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        f.write_char('"')?;
+        for c in self.chars() {
+            match c {
+                '"' => f.write_str("\\\"")?,
+                '\n' => f.write_str("\\n")?,
+                '\r' => f.write_str("\\r")?,
+                '\t' => f.write_str("\\t")?,
+                _ => f.write_char(c)?,
+            }
+        }
+        f.write_char('"')
+    }
+}
+
+impl<'a> Deref for EscapedStr<'a> {
     type Target = str;
 
     fn deref(&self) -> &str {

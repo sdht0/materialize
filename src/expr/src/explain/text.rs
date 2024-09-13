@@ -11,12 +11,12 @@
 
 use std::collections::BTreeMap;
 use std::fmt;
-use std::fmt::Debug;
+use std::fmt::{Debug, Pointer, Write};
 use std::sync::atomic::Ordering;
 
 use mz_ore::assert::SOFT_ASSERTIONS;
 use mz_ore::soft_assert_eq_or_log;
-use mz_ore::str::{closure_to_display, separated, Indent, IndentLike, StrExt};
+use mz_ore::str::{closure_to_display, separated, EscapedStr, Indent, IndentLike, StrExt};
 use mz_repr::explain::text::DisplayText;
 use mz_repr::explain::{
     CompactScalars, ExprHumanizer, HumanizedAttributes, IndexUsageType, Indices,
@@ -1092,6 +1092,8 @@ pub trait HumanizerMode: Sized + Clone {
     fn humanize_datum(&self, datum: Datum<'_>, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         if self.redacted() {
             write!(f, "█")
+        } else if let Datum::String(s) = datum {
+            write!(f, "{}", s.escaped())
         } else {
             write!(f, "{}", datum)
         }
@@ -1319,7 +1321,7 @@ where
 /// Render a literal value represented as a single-element [`Row`] or an
 /// [`EvalError`].
 ///
-/// The default implemntation calls [`HumanizerMode::humanize_datum`] for
+/// The default implementation calls [`HumanizerMode::humanize_datum`] for
 /// the former and handles the error case (including redaction) directly for
 /// the latter.
 impl<'a, M> fmt::Display for HumanizedExpr<'a, Result<Row, EvalError>, M>
@@ -1409,10 +1411,11 @@ fn write_first_rows(
     let mode = HumanizedExplain::new(redacted);
     for (row, diff) in first_rows {
         let row = mode.expr(*row, None);
+        let row_escaped = row.to_string().replace('\n', "\\n");
         if **diff == 1 {
-            writeln!(f, "{}- {}", ctx, row)?;
+            writeln!(f, "{}- {}", ctx, row_escaped)?;
         } else {
-            writeln!(f, "{}- ({} x {})", ctx, row, diff)?;
+            writeln!(f, "{}- ({} x {})", ctx, row_escaped, diff)?;
         }
     }
     Ok(())
