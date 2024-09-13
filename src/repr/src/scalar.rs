@@ -1351,7 +1351,7 @@ impl fmt::Display for Datum<'_> {
                 Ok(())
             }
             Datum::String(s) => {
-                write!(f, "{}", s.quoted())
+                write!(f, "{}", s.escaped())
             }
             Datum::Uuid(u) => write!(f, "{}", u),
             Datum::Array(array) => {

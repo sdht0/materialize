@@ -39,6 +39,7 @@ pub struct ComputeSinkDesc<S: 'static = (), T = Timestamp> {
     pub non_null_assertions: Vec<usize>,
     /// TODO(#25239): Add documentation.
     pub refresh_schedule: Option<RefreshSchedule>,
+    // TODO(Sdh): add LD flag + now()
 }
 
 impl Arbitrary for ComputeSinkDesc<CollectionMetadata, Timestamp> {

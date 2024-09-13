@@ -952,13 +952,13 @@ where
                         event_time,
                         diff.clone(),
                         move |time| {
-                            println!("here: time1 = {until:?} | {time:?}");
+                            // println!("here: time1 = {until:?} | {time:?}");
                             !until.less_equal(time)
                         },
                         &mut row_builder,
                     )
-                    .inspect(|x| {
-                        println!("here: result1 = {:?}", x);
+                    .inspect(|_x| {
+                        // println!("here: result1 = {:?}", x);
                     })
                     .map(move |x| match x {
                         Ok((row, event_time, diff)) => {

@@ -73,9 +73,9 @@ pub struct DataflowDescription<P, S: 'static = (), T = mz_repr::Timestamp> {
     /// Human readable name
     pub debug_name: String,
     // Timeline should be epochmilisec
-    // Should not have refresh every
+    /// Should not have refresh every
     pub timeline: Timeline,
-    // pub discard_temporal_data: bool,
+    pub discard_temporal_data: bool,
     // changes to the plan:
     // prepare the mfp to filter out data
 

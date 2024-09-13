@@ -38,6 +38,13 @@ pub const ENABLE_COLUMNATION_LGALLOC: Config<bool> = Config::new(
     "Enable allocating regions from lgalloc.",
 );
 
+/// t_limit offset
+pub const TEMPORAL_FILTERS_DROP_DATA_OFFSET: Config<Duration> = Config::new(
+    "temporal_filters_drop_data_offset",
+    Duration::from_secs(1 * 60 * 60),
+    "t_limit offset.",
+);
+
 /// Enable lgalloc's eager memory return/reclamation feature.
 pub const ENABLE_LGALLOC_EAGER_RECLAMATION: Config<bool> = Config::new(
     "enable_lgalloc_eager_reclamation",
@@ -139,6 +146,7 @@ pub fn all_dyncfgs(configs: ConfigSet) -> ConfigSet {
         .add(&LINEAR_JOIN_YIELDING)
         .add(&ENABLE_COLUMNATION_LGALLOC)
         .add(&ENABLE_LGALLOC_EAGER_RECLAMATION)
+        .add(&TEMPORAL_FILTERS_DROP_DATA_OFFSET)
         .add(&ENABLE_CHUNKED_STACK)
         .add(&COMPUTE_SERVER_MAINTENANCE_INTERVAL)
         .add(&DATAFLOW_MAX_INFLIGHT_BYTES)

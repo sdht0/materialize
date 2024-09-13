@@ -13,6 +13,10 @@ use std::any::Any;
 use std::collections::{BTreeMap, BTreeSet};
 use std::rc::Rc;
 
+use crate::compute_state::SinkToken;
+use crate::logging::compute::LogDataflowErrors;
+use crate::render::context::Context;
+use crate::render::{RenderTimestamp, StartSignal};
 use differential_dataflow::Collection;
 use mz_compute_types::sinks::{ComputeSinkConnection, ComputeSinkDesc};
 use mz_expr::{permutation_for_arrangement, EvalError, MapFilterProject};
@@ -27,11 +31,6 @@ use timely::container::CapacityContainerBuilder;
 use timely::dataflow::scopes::Child;
 use timely::dataflow::Scope;
 use timely::progress::Antichain;
-
-use crate::compute_state::SinkToken;
-use crate::logging::compute::LogDataflowErrors;
-use crate::render::context::Context;
-use crate::render::{RenderTimestamp, StartSignal};
 
 impl<'g, G, T> Context<Child<'g, G, T>>
 where
@@ -117,6 +116,19 @@ where
                 });
             ok_collection = oks;
             err_collection = err_collection.concat(&null_errs);
+        }
+
+        if let Some(t_limit) = compute_state.t_limit {
+            ok_collection = ok_collection.inspect_container(move |data| {
+                if let Err(frontier) = data {
+                    assert!(!frontier.iter().any(|timestamp| timestamp >= &t_limit))
+                }
+            });
+            err_collection = err_collection.inspect_container(move |data| {
+                if let Err(frontier) = data {
+                    assert!(!frontier.iter().any(|timestamp| timestamp >= &t_limit))
+                }
+            });
         }
 
         let region_name = match sink.connection {

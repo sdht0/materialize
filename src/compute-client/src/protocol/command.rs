@@ -269,6 +269,23 @@ pub enum ComputeCommand<T = mz_repr::Timestamp> {
     },
 }
 
+impl<T> ComputeCommand<T> {
+    pub fn kind(&self) -> &'static str {
+        match self {
+            ComputeCommand::CreateTimely { .. } => "ComputeCommand::CreateTimely",
+            ComputeCommand::CreateInstance(_) => "ComputeCommand::CreateInstance",
+            ComputeCommand::InitializationComplete => "ComputeCommand::InitializationComplete",
+            ComputeCommand::AllowWrites => "ComputeCommand::AllowWrites",
+            ComputeCommand::UpdateConfiguration(_) => "ComputeCommand::UpdateConfiguration",
+            ComputeCommand::CreateDataflow(_) => "ComputeCommand::CreateDataflow",
+            ComputeCommand::Schedule(_) => "ComputeCommand::Schedule",
+            ComputeCommand::AllowCompaction { .. } => "ComputeCommand::AllowCompaction",
+            ComputeCommand::Peek(_) => "ComputeCommand::Peek",
+            ComputeCommand::CancelPeek { .. } => "ComputeCommand::CancelPeek",
+        }
+    }
+}
+
 impl RustType<ProtoComputeCommand> for ComputeCommand<mz_repr::Timestamp> {
     fn into_proto(&self) -> ProtoComputeCommand {
         use proto_compute_command::Kind::*;

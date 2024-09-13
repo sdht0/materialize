@@ -544,6 +544,7 @@ impl PendingWork {
         map_filter_project: Option<&MfpPlan>,
         datum_vec: &mut DatumVec,
         row_builder: &mut Row,
+        t_limit: Option<Timestamp>,
         output: &mut OutputHandleCore<
             '_,
             (mz_repr::Timestamp, Subtime),
@@ -580,7 +581,8 @@ impl PendingWork {
             .unwrap_or(false)
             .then(|| (SourceData(Ok(Row::default())), ()));
         let now = (SYSTEM_TIME.clone())();
-        let t_limit = Timestamp::new(now).step_forward_by(&Timestamp::new(now + 15));
+        let t_limit = Timestamp::new(now).step_forward_by(&Timestamp::new(15000));
+        println!("t_limit = {t_limit:?}");
         while let Some(((key, val), time, diff)) =
             fetched_part.next_with_storage(&mut row_buf, &mut None, row_override.clone())
         {
@@ -605,12 +607,15 @@ impl PendingWork {
                             time,
                             diff,
                             |time| {
-                                println!("here: time3 = {until:?} | {time:?}");
+                                workspace_hack::mzdbgvar!(
+                                    "do_work",
+                                    "here: time3 = {until:?} | {time:?}"
+                                );
                                 !until.less_equal(time) && time < &t_limit
                             },
                             row_builder,
                         ) {
-                            println!("here: result3 = {result:?}");
+                            workspace_hack::mzdbgvar!("here: result3", result);
                             if let Some(_stats) = &is_filter_pushdown_audit {
                                 // NB: The tag added by this scope is used for alerting. The panic
                                 // message may be changed arbitrarily, but the tag key and val must

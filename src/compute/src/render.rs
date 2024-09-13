@@ -132,7 +132,7 @@ use timely::communication::Allocate;
 use timely::container::columnation::Columnation;
 use timely::dataflow::channels::pact::Pipeline;
 use timely::dataflow::operators::to_stream::ToStream;
-use timely::dataflow::operators::{probe, BranchWhen, Operator, Probe};
+use timely::dataflow::operators::{probe, BranchWhen, InspectCore, Operator, Probe};
 use timely::dataflow::scopes::Child;
 use timely::dataflow::{Scope, Stream};
 use timely::order::Product;
@@ -200,6 +200,7 @@ pub fn build_compute_dataflow<A: Allocate>(
     let name = format!("Dataflow: {}", &dataflow.debug_name);
     let input_name = format!("InputRegion: {}", &dataflow.debug_name);
     let build_name = format!("BuildRegion: {}", &dataflow.debug_name);
+    let t_limit = compute_state.t_limit;
 
     timely_worker.dataflow_core(&name, worker_logging, Box::new(()), |_, scope| {
         // The scope.clone() occurs to allow import in the region.
@@ -219,7 +220,7 @@ pub fn build_compute_dataflow<A: Allocate>(
 
                     // Note: For correctness, we require that sources only emit times advanced by
                     // `dataflow.as_of`. `persist_source` is documented to provide this guarantee.
-                    let (mut ok_stream, err_stream, token) = persist_source::persist_source(
+                    let (mut ok_stream, mut err_stream, token) = persist_source::persist_source(
                         inner,
                         *source_id,
                         Arc::clone(&compute_state.persist_clients),
@@ -228,12 +229,25 @@ pub fn build_compute_dataflow<A: Allocate>(
                         source.storage_metadata.clone(),
                         dataflow.as_of.clone(),
                         SnapshotMode::Include,
-                        dataflow.until.clone(),
+                        dataflow.until.clone(), // TODO(sdh)  + t_limit if set, only needs to set it here
                         mfp.as_mut(),
                         compute_state.dataflow_max_inflight_bytes(),
                         start_signal.clone(),
                         |error| panic!("compute_import: {error}"),
                     );
+
+                    if let Some(t_limit) = t_limit {
+                        ok_stream = ok_stream.inspect_container(move |data| {
+                            if let Err(frontier) = data {
+                                assert!(!frontier.iter().any(|timestamp| timestamp >= &t_limit))
+                            }
+                        });
+                        err_stream = err_stream.inspect_container(move |data| {
+                            if let Err(frontier) = data {
+                                assert!(!frontier.iter().any(|timestamp| timestamp >= &t_limit))
+                            }
+                        });
+                    }
 
                     // If `mfp` is non-identity, we need to apply what remains.
                     // For the moment, assert that it is either trivial or `None`.

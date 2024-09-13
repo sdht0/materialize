@@ -8,6 +8,7 @@
 // by the Apache License, Version 2.0.
 
 use std::path::PathBuf;
+use std::sync::atomic::Ordering;
 use std::sync::Arc;
 use std::sync::LazyLock;
 
@@ -40,6 +41,7 @@ use mz_storage_types::connections::ConnectionContext;
 use mz_txn_wal::operator::TxnsContext;
 use tower::Service;
 use tracing::{error, info};
+use workspace_hack::SDH_LOGGER;
 
 const BUILD_INFO: BuildInfo = build_info!();
 
@@ -345,6 +347,9 @@ async fn run(args: Args) -> Result<(), anyhow::Error> {
             |svc| ProtoComputeServer::new(svc).max_decoding_message_size(MAX_GRPC_MESSAGE_SIZE),
         ),
     );
+
+    workspace_hack::mzdbgmark!("run", "sdh: here");
+    SDH_LOGGER.store(true, Ordering::Release);
 
     // TODO: unify storage and compute servers to use one timely cluster.
 

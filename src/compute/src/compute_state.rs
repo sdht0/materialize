@@ -14,6 +14,13 @@ use std::rc::Rc;
 use std::sync::{mpsc, Arc};
 use std::time::{Duration, Instant};
 
+use crate::arrangement::manager::{SpecializedTraceHandle, TraceBundle, TraceManager};
+use crate::logging;
+use crate::logging::compute::{CollectionLogging, ComputeEvent};
+use crate::metrics::ComputeMetrics;
+use crate::metrics::WorkerMetrics;
+use crate::render::{LinearJoinSpec, StartSignal};
+use crate::server::{ComputeInstanceContext, ResponseSender};
 use bytesize::ByteSize;
 use differential_dataflow::trace::cursor::IntoOwned;
 use differential_dataflow::trace::{Cursor, TraceReader};
@@ -34,6 +41,7 @@ use mz_dyncfg::ConfigSet;
 use mz_expr::SafeMfpPlan;
 use mz_ore::cast::CastFrom;
 use mz_ore::metrics::UIntGauge;
+use mz_ore::now::SYSTEM_TIME;
 use mz_ore::task::AbortOnDropHandle;
 use mz_ore::tracing::{OpenTelemetryContext, TracingHandle};
 use mz_persist_client::cache::PersistClientCache;
@@ -57,14 +65,6 @@ use timely::worker::Worker as TimelyWorker;
 use tokio::sync::{oneshot, watch};
 use tracing::{debug, error, info, span, warn, Level};
 use uuid::Uuid;
-
-use crate::arrangement::manager::{SpecializedTraceHandle, TraceBundle, TraceManager};
-use crate::logging;
-use crate::logging::compute::{CollectionLogging, ComputeEvent};
-use crate::metrics::ComputeMetrics;
-use crate::metrics::WorkerMetrics;
-use crate::render::{LinearJoinSpec, StartSignal};
-use crate::server::{ComputeInstanceContext, ResponseSender};
 
 /// Worker-local state that is maintained across dataflows.
 ///
@@ -162,6 +162,9 @@ pub struct ComputeState {
     /// Interval at which to perform server maintenance tasks. Set to a zero interval to
     /// perform maintenance with every `step_or_park` invocation.
     pub server_maintenance_interval: Duration,
+
+    /// TODO(sdht0)
+    pub t_limit: Option<Timestamp>,
 }
 
 impl ComputeState {
@@ -208,6 +211,7 @@ impl ComputeState {
             read_only_tx,
             read_only_rx,
             server_maintenance_interval: Duration::ZERO,
+            t_limit: None,
         }
     }
 
@@ -253,6 +257,7 @@ impl ComputeState {
 
     /// Apply the current `worker_config` to the compute state.
     fn apply_worker_config(&mut self) {
+        workspace_hack::mzdbgmark!("ComputerState::apply_worker_config");
         use mz_compute_types::dyncfgs::*;
 
         let config = &self.worker_config;
@@ -286,6 +291,23 @@ impl ComputeState {
             info!("disabling lgalloc");
             lgalloc::lgalloc_set_config(&lgalloc::LgAlloc::new())
         }
+
+        if self.t_limit.is_none() {
+            let offset = TEMPORAL_FILTERS_DROP_DATA_OFFSET.get(&self.worker_config);
+            if !offset.is_zero() {
+                // TODO: look into how to send now() from environmentd
+                let now = (SYSTEM_TIME.clone())();
+                let t_limit = Timestamp::new(now).step_forward_by(&Timestamp::new(
+                    offset
+                        .as_millis()
+                        .try_into()
+                        .expect("Duration did not fit within u64"),
+                ));
+                println!("setting t_limit = {t_limit:?}");
+                self.t_limit = Some(t_limit)
+            }
+        }
+        // user alter system set to test
 
         let chunked_stack = ENABLE_CHUNKED_STACK.get(config);
         info!("using chunked stack: {chunked_stack}");
@@ -335,6 +357,7 @@ impl<'a, A: Allocate + 'static> ActiveComputeState<'a, A> {
     /// Entrypoint for applying a compute command.
     #[mz_ore::instrument(level = "debug")]
     pub fn handle_compute_command(&mut self, cmd: ComputeCommand) {
+        workspace_hack::mzdbgmark!("ActiveComputeState::handle_compute_command", cmd.kind());
         use ComputeCommand::*;
 
         self.compute_state.command_history.push(cmd.clone());
@@ -379,6 +402,7 @@ impl<'a, A: Allocate + 'static> ActiveComputeState<'a, A> {
     }
 
     fn handle_update_configuration(&mut self, params: ComputeParameters) {
+        // TODO sdh
         info!("Applying configuration update: {params:?}");
 
         let ComputeParameters {
@@ -1158,6 +1182,12 @@ impl IndexPeek {
                 self.peek.timestamp,
             );
             return Some(PeekResponse::Error(error));
+        }
+        let now = (SYSTEM_TIME.clone())();
+        let t_limit = Timestamp::new(now).step_forward_by(&Timestamp::new(now + 15000));
+        println!("t_limit2 = {t_limit:?}");
+        if !self.peek.timestamp.less_than(&t_limit) {
+            panic!()
         }
 
         let response = match self.collect_finished_data(max_result_size) {
