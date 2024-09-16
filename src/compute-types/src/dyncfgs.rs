@@ -132,6 +132,15 @@ pub const PERSIST_SINK_OBEY_READ_ONLY: Config<bool> = Config::new(
     "Whether the compute persist_sink obeys read-only mode.",
 );
 
+/// A time offset for replicas beyond which output diffs of temporal filters are dropped.
+/// Used to drop diffs at timestamps that exceed the expected lifetime of a running replica.
+/// A zero value implies no data is dropped.
+pub const TEMPORAL_FILTERS_TS_LIMIT_OFFSET: Config<Duration> = Config::new(
+    "temporal_filters_ts_limit_offset",
+    Duration::from_secs(0),
+    "A time offset for replicas beyond which output diffs of temporal filters are dropped.",
+);
+
 /// Adds the full set of all compute `Config`s.
 pub fn all_dyncfgs(configs: ConfigSet) -> ConfigSet {
     configs
@@ -150,4 +159,5 @@ pub fn all_dyncfgs(configs: ConfigSet) -> ConfigSet {
         .add(&COPY_TO_S3_ARROW_BUILDER_BUFFER_RATIO)
         .add(&COPY_TO_S3_MULTIPART_PART_SIZE_BYTES)
         .add(&PERSIST_SINK_OBEY_READ_ONLY)
+        .add(&TEMPORAL_FILTERS_TS_LIMIT_OFFSET)
 }

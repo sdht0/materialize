@@ -123,6 +123,7 @@ where
         source_as_of,
         SnapshotMode::Include,
         Antichain::new(), // we want all updates
+        compute_state.tf_ts_limit,
         None,             // no MFP
         compute_state.dataflow_max_inflight_bytes(),
         start_signal,

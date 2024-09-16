@@ -162,6 +162,10 @@ pub struct ComputeState {
     /// Interval at which to perform server maintenance tasks. Set to a zero interval to
     /// perform maintenance with every `step_or_park` invocation.
     pub server_maintenance_interval: Duration,
+
+    /// When set, drops temporal filters' output diffs whose timestamp is greater than or equal to
+    /// `tf_ts_limit`.
+    pub tf_ts_limit: Option<Timestamp>,
 }
 
 impl ComputeState {
@@ -208,6 +212,7 @@ impl ComputeState {
             read_only_tx,
             read_only_rx,
             server_maintenance_interval: Duration::ZERO,
+            tf_ts_limit: None,
         }
     }
 
@@ -294,6 +299,21 @@ impl ComputeState {
         // Remember the maintenance interval locally to avoid reading it from the config set on
         // every server iteration.
         self.server_maintenance_interval = COMPUTE_SERVER_MAINTENANCE_INTERVAL.get(config);
+
+        if self.tf_ts_limit.is_none() {
+            let offset = TEMPORAL_FILTERS_TS_LIMIT_OFFSET.get(&self.worker_config);
+            if !offset.is_zero() {
+                // TODO(sdht0): send now() consistently from environmentd
+                let now = mz_ore::now::SYSTEM_TIME.clone()();
+                let tf_ts_limit = Timestamp::new(now).step_forward_by(&Timestamp::new(
+                    offset
+                        .as_millis()
+                        .try_into()
+                        .expect("Duration did not fit within u64"),
+                ));
+                self.tf_ts_limit = Some(tf_ts_limit)
+            }
+        }
     }
 
     /// Returns the cc or non-cc version of "dataflow_max_inflight_bytes", as
@@ -763,7 +783,7 @@ impl<'a, A: Allocate + 'static> ActiveComputeState<'a, A> {
     fn process_peek(&mut self, upper: &mut Antichain<Timestamp>, mut peek: PendingPeek) {
         let response = match &mut peek {
             PendingPeek::Index(peek) => {
-                peek.seek_fulfillment(upper, self.compute_state.max_result_size)
+                peek.seek_fulfillment(upper, self.compute_state.max_result_size, self.compute_state.tf_ts_limit)
             }
             PendingPeek::Persist(peek) => peek.result.try_recv().ok().map(|(result, duration)| {
                 self.compute_state
@@ -1140,6 +1160,7 @@ impl IndexPeek {
         &mut self,
         upper: &mut Antichain<Timestamp>,
         max_result_size: u64,
+        tf_ts_limit: Option<Timestamp>,
     ) -> Option<PeekResponse> {
         self.trace_bundle.oks_mut().read_upper(upper);
         if upper.less_equal(&self.peek.timestamp) {
@@ -1158,6 +1179,14 @@ impl IndexPeek {
                 self.peek.timestamp,
             );
             return Some(PeekResponse::Error(error));
+        }
+
+        if let Some(tf_ts_limit) = tf_ts_limit {
+            // Check that the frontier does not move past the set replica limit.
+            assert!(
+                self.peek.timestamp.less_than(&tf_ts_limit),
+                "Peek timestamp '{:?}' has moved past the timestamp limit '{tf_ts_limit:?}'", self.peek.timestamp
+            );
         }
 
         let response = match self.collect_finished_data(max_result_size) {

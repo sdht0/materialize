@@ -34,6 +34,7 @@ where
         func: TableFunc,
         exprs: Vec<MirScalarExpr>,
         mfp: MapFilterProject,
+        tf_ts_limit: Option<Timestamp>,
         input_key: Option<Vec<MirScalarExpr>>,
     ) -> CollectionBundle<G> {
         let until = self.until.clone();
@@ -91,6 +92,7 @@ where
                                 &mut datums_mfp,
                                 &table_func_output,
                                 &mfp_plan,
+                                tf_ts_limit,
                                 &until,
                                 &mut ok_session,
                                 &mut err_session,
@@ -120,6 +122,7 @@ fn drain_through_mfp<T>(
     datum_vec: &mut DatumVec,
     extensions: &[(Row, Diff)],
     mfp_plan: &MfpPlan,
+    tf_ts_limit: Option<Timestamp>,
     until: &Antichain<Timestamp>,
     ok_output: &mut Session<
         T,
@@ -154,7 +157,11 @@ fn drain_through_mfp<T>(
             &temp_storage,
             event_time,
             diff * *input_diff,
-            |time| !until.less_equal(time),
+            |time| {
+                !until.less_equal(time) && tf_ts_limit.map_or(true, |tf_ts_limit| {
+                    time < &tf_ts_limit
+                })
+            },
             &mut row_builder,
         );
 

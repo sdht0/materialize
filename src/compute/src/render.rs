@@ -132,7 +132,7 @@ use timely::communication::Allocate;
 use timely::container::columnation::Columnation;
 use timely::dataflow::channels::pact::Pipeline;
 use timely::dataflow::operators::to_stream::ToStream;
-use timely::dataflow::operators::{probe, BranchWhen, Operator, Probe};
+use timely::dataflow::operators::{probe, BranchWhen, InspectCore, Operator, Probe};
 use timely::dataflow::scopes::Child;
 use timely::dataflow::{Scope, Stream};
 use timely::order::Product;
@@ -197,6 +197,8 @@ pub fn build_compute_dataflow<A: Allocate>(
 
     let worker_logging = timely_worker.log_register().get("timely");
 
+    let tf_ts_limit = compute_state.tf_ts_limit;
+
     let name = format!("Dataflow: {}", &dataflow.debug_name);
     let input_name = format!("InputRegion: {}", &dataflow.debug_name);
     let build_name = format!("BuildRegion: {}", &dataflow.debug_name);
@@ -219,7 +221,7 @@ pub fn build_compute_dataflow<A: Allocate>(
 
                     // Note: For correctness, we require that sources only emit times advanced by
                     // `dataflow.as_of`. `persist_source` is documented to provide this guarantee.
-                    let (mut ok_stream, err_stream, token) = persist_source::persist_source(
+                    let (mut ok_stream, mut err_stream, token) = persist_source::persist_source(
                         inner,
                         *source_id,
                         Arc::clone(&compute_state.persist_clients),
@@ -229,11 +231,25 @@ pub fn build_compute_dataflow<A: Allocate>(
                         dataflow.as_of.clone(),
                         SnapshotMode::Include,
                         dataflow.until.clone(),
+                        tf_ts_limit,
                         mfp.as_mut(),
                         compute_state.dataflow_max_inflight_bytes(),
                         start_signal.clone(),
                         |error| panic!("compute_import: {error}"),
                     );
+
+                    if let Some(tf_ts_limit) = tf_ts_limit {
+                        ok_stream = ok_stream.inspect_container(move |data| {
+                            if let Err(frontier) = data {
+                                assert!(!frontier.iter().any(|timestamp| timestamp >= &tf_ts_limit))
+                            }
+                        });
+                        err_stream = err_stream.inspect_container(move |data| {
+                            if let Err(frontier) = data {
+                                assert!(!frontier.iter().any(|timestamp| timestamp >= &tf_ts_limit))
+                            }
+                        });
+                    }
 
                     // If `mfp` is non-identity, we need to apply what remains.
                     // For the moment, assert that it is either trivial or `None`.
@@ -306,7 +322,7 @@ pub fn build_compute_dataflow<A: Allocate>(
                             let depends = object.plan.depends();
                             context
                                 .enter_region(region, Some(&depends))
-                                .render_recursive_plan(0, object.plan)
+                                .render_recursive_plan(0, object.plan, tf_ts_limit)
                                 .leave_region()
                         },
                     );
@@ -375,7 +391,7 @@ pub fn build_compute_dataflow<A: Allocate>(
                             let depends = object.plan.depends();
                             context
                                 .enter_region(region, Some(&depends))
-                                .render_plan(object.plan)
+                                .render_plan(object.plan, tf_ts_limit)
                                 .leave_region()
                         },
                     );
@@ -639,7 +655,7 @@ where
     ///
     /// The method requires that all variables conclude with a physical representation that
     /// contains a collection (i.e. a non-arrangement), and it will panic otherwise.
-    pub fn render_recursive_plan(&mut self, level: usize, plan: FlatPlan) -> CollectionBundle<G> {
+    pub fn render_recursive_plan(&mut self, level: usize, plan: FlatPlan, tf_ts_limit: Option<mz_repr::Timestamp>) -> CollectionBundle<G> {
         if plan.is_recursive() {
             let (values, body) = plan.split_recursive();
             let ids: Vec<_> = values.iter().map(|(id, _, _)| *id).collect();
@@ -665,7 +681,7 @@ where
             }
             // Now render each of the bindings.
             for (id, value, limit) in values {
-                let bundle = self.render_recursive_plan(level + 1, value);
+                let bundle = self.render_recursive_plan(level + 1, value, tf_ts_limit);
                 // We need to ensure that the raw collection exists, but do not have enough information
                 // here to cause that to happen.
                 let (oks, mut err) = bundle.collection.clone().unwrap();
@@ -731,9 +747,9 @@ where
                 );
             }
 
-            self.render_recursive_plan(level, body)
+            self.render_recursive_plan(level, body, tf_ts_limit)
         } else {
-            self.render_plan(plan)
+            self.render_plan(plan, tf_ts_limit)
         }
     }
 }
@@ -750,7 +766,7 @@ where
     ///
     /// The return type reflects the uncertainty about the data representation, perhaps
     /// as a stream of data, perhaps as an arrangement, perhaps as a stream of batches.
-    pub fn render_plan(&mut self, plan: FlatPlan) -> CollectionBundle<G> {
+    pub fn render_plan(&mut self, plan: FlatPlan, tf_ts_limit: Option<mz_repr::Timestamp>) -> CollectionBundle<G> {
         let (values, body) = plan.split_lets();
         for (id, value) in values {
             let bundle = self
@@ -759,7 +775,7 @@ where
                 .region_named(&format!("Binding({:?})", id), |region| {
                     let depends = value.depends();
                     self.enter_region(region, Some(&depends))
-                        .render_letfree_plan(value)
+                        .render_letfree_plan(value, tf_ts_limit)
                         .leave_region()
                 });
             self.insert_id(Id::Local(id), bundle);
@@ -768,7 +784,7 @@ where
         self.scope.clone().region_named("Main Body", |region| {
             let depends = body.depends();
             self.enter_region(region, Some(&depends))
-                .render_letfree_plan(body)
+                .render_letfree_plan(body, tf_ts_limit)
                 .leave_region()
         })
     }
@@ -776,7 +792,7 @@ where
     /// Renders a plan to a differential dataflow, producing the collection of results.
     ///
     /// The plan must _not_ contain any `Let` or `LetRec` nodes.
-    fn render_letfree_plan(&mut self, plan: FlatPlan) -> CollectionBundle<G> {
+    fn render_letfree_plan(&mut self, plan: FlatPlan, tf_ts_limit: Option<mz_repr::Timestamp>) -> CollectionBundle<G> {
         let (mut nodes, root_id, topological_order) = plan.destruct();
 
         // Rendered collections by their `LirId`.
@@ -784,7 +800,7 @@ where
 
         for id in topological_order {
             let node = nodes.remove(&id).unwrap();
-            let mut bundle = self.render_plan_node(node, &collections);
+            let mut bundle = self.render_plan_node(node, &collections, tf_ts_limit);
 
             self.log_operator_hydration(&mut bundle, id);
 
@@ -806,6 +822,7 @@ where
         &mut self,
         node: FlatPlanNode,
         collections: &BTreeMap<LirId, CollectionBundle<G>>,
+        tf_ts_limit: Option<mz_repr::Timestamp>,
     ) -> CollectionBundle<G> {
         use FlatPlanNode::*;
 
@@ -883,6 +900,7 @@ where
                     mz_compute_types::plan::GetPlan::Arrangement(key, row, mfp) => {
                         let (oks, errs) = collection.as_collection_core(
                             mfp,
+                            tf_ts_limit,
                             Some((key, row)),
                             self.until.clone(),
                         );
@@ -890,7 +908,7 @@ where
                     }
                     mz_compute_types::plan::GetPlan::Collection(mfp) => {
                         let (oks, errs) =
-                            collection.as_collection_core(mfp, None, self.until.clone());
+                            collection.as_collection_core(mfp, tf_ts_limit, None, self.until.clone());
                         CollectionBundle::from_collections(oks, errs)
                     }
                 }
@@ -912,7 +930,7 @@ where
                     input
                 } else {
                     let (oks, errs) =
-                        input.as_collection_core(mfp, input_key_val, self.until.clone());
+                        input.as_collection_core(mfp, tf_ts_limit, input_key_val, self.until.clone());
                     CollectionBundle::from_collections(oks, errs)
                 }
             }
@@ -924,7 +942,7 @@ where
                 input_key,
             } => {
                 let input = expect_input(input);
-                self.render_flat_map(input, func, exprs, mfp, input_key)
+                self.render_flat_map(input, func, exprs, mfp, tf_ts_limit, input_key)
             }
             Join { inputs, plan } => {
                 let inputs = inputs.into_iter().map(expect_input).collect();
@@ -989,7 +1007,7 @@ where
                 input_mfp,
             } => {
                 let input = expect_input(input);
-                input.ensure_collections(keys, input_key, input_mfp, self.until.clone())
+                input.ensure_collections(keys, input_key, input_mfp, self.until.clone(), tf_ts_limit)
             }
         }
     }

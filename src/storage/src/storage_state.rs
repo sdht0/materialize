@@ -465,7 +465,7 @@ impl<'w, A: Allocate> Worker<'w, A> {
                 let mut borrow = self.storage_state.internal_cmd_tx.borrow_mut();
                 if let Some(internal_cmd) = borrow.next() {
                     drop(borrow);
-                    self.handle_internal_storage_command(internal_cmd)
+                    self.handle_internal_storage_command(internal_cmd, None)
                 } else {
                     break;
                 }
@@ -508,7 +508,7 @@ impl<'w, A: Allocate> Worker<'w, A> {
     }
 
     /// Entry point for applying an internal storage command.
-    pub fn handle_internal_storage_command(&mut self, internal_cmd: InternalStorageCommand) {
+    pub fn handle_internal_storage_command(&mut self, internal_cmd: InternalStorageCommand, tf_ts_limit: Option<Timestamp>) {
         match internal_cmd {
             InternalStorageCommand::SuspendAndRestart { id, reason } => {
                 info!(
@@ -675,6 +675,7 @@ impl<'w, A: Allocate> Worker<'w, A> {
                     as_of,
                     resume_uppers,
                     source_resume_uppers,
+                    tf_ts_limit
                 );
             }
             InternalStorageCommand::RunSinkDataflow(sink_id, sink_description) => {
@@ -713,6 +714,7 @@ impl<'w, A: Allocate> Worker<'w, A> {
                     &mut self.storage_state,
                     sink_id,
                     sink_description,
+                    tf_ts_limit,
                 );
             }
             InternalStorageCommand::DropDataflow(ids) => {

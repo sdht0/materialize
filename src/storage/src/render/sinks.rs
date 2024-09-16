@@ -28,7 +28,6 @@ use timely::dataflow::operators::Leave;
 use timely::dataflow::scopes::Child;
 use timely::dataflow::{Scope, Stream};
 use tracing::warn;
-
 use crate::healthcheck::HealthStatusMessage;
 use crate::internal_control::InternalStorageCommand;
 use crate::storage_state::StorageState;
@@ -37,10 +36,11 @@ use crate::storage_state::StorageState;
 /// that represent the sink and its errors as requested
 /// by the original `CREATE SINK` statement.
 pub(crate) fn render_sink<'g, G: Scope<Timestamp = ()>>(
-    scope: &mut Child<'g, G, mz_repr::Timestamp>,
+    scope: &mut Child<'g, G, Timestamp>,
     storage_state: &mut StorageState,
     sink_id: GlobalId,
-    sink: &StorageSinkDesc<MetadataFilled, mz_repr::Timestamp>,
+    sink: &StorageSinkDesc<MetadataFilled, Timestamp>,
+    tf_ts_limit: Option<Timestamp>,
 ) -> (Stream<G, HealthStatusMessage>, Vec<PressOnDropButton>) {
     let sink_render = get_sink_render_for(&sink.connection);
 
@@ -64,6 +64,7 @@ pub(crate) fn render_sink<'g, G: Scope<Timestamp = ()>>(
         Some(sink.as_of.clone()),
         snapshot_mode,
         timely::progress::Antichain::new(),
+        tf_ts_limit,
         None,
         None,
         async {},

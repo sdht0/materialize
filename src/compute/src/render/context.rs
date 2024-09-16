@@ -907,6 +907,7 @@ where
     pub fn as_collection_core(
         &self,
         mut mfp: MapFilterProject,
+        tf_ts_limit: Option<mz_repr::Timestamp>,
         key_val: Option<(Vec<MirScalarExpr>, Option<Row>)>,
         until: Antichain<mz_repr::Timestamp>,
     ) -> (
@@ -951,7 +952,11 @@ where
                         &temp_storage,
                         event_time,
                         diff.clone(),
-                        move |time| !until.less_equal(time),
+                        move |time| {
+                            !until.less_equal(time) && tf_ts_limit.map_or(true, |tf_ts_limit| {
+                                time < &tf_ts_limit
+                            })
+                        },
                         &mut row_builder,
                     )
                     .map(move |x| match x {
@@ -987,6 +992,7 @@ where
         input_key: Option<Vec<MirScalarExpr>>,
         input_mfp: MapFilterProject,
         until: Antichain<mz_repr::Timestamp>,
+        tf_ts_limit: Option<mz_repr::Timestamp>,
     ) -> Self {
         if collections == Default::default() {
             return self;
@@ -1007,7 +1013,7 @@ where
                 .any(|(key, _, _)| !self.arranged.contains_key(key));
         if form_raw_collection && self.collection.is_none() {
             self.collection =
-                Some(self.as_collection_core(input_mfp, input_key.map(|k| (k, None)), until));
+                Some(self.as_collection_core(input_mfp, tf_ts_limit, input_key.map(|k| (k, None)), until));
         }
         for (key, _, thinning) in collections.arranged {
             if !self.arranged.contains_key(&key) {

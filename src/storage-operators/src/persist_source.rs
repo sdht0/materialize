@@ -144,6 +144,7 @@ pub fn persist_source<G>(
     as_of: Option<Antichain<Timestamp>>,
     snapshot_mode: SnapshotMode,
     until: Antichain<Timestamp>,
+    tf_ts_limit: Option<Timestamp>,
     map_filter_project: Option<&mut MfpPlan>,
     max_inflight_bytes: Option<usize>,
     start_signal: impl Future<Output = ()> + 'static,
@@ -208,6 +209,7 @@ where
             snapshot_mode,
             until.clone(),
             map_filter_project,
+            tf_ts_limit,
             flow_control,
             subscribe_sleep,
             start_signal,
@@ -278,6 +280,7 @@ pub fn persist_source_core<'g, G>(
     snapshot_mode: SnapshotMode,
     until: Antichain<Timestamp>,
     map_filter_project: Option<&mut MfpPlan>,
+    tf_ts_limit: Option<Timestamp>,
     flow_control: Option<FlowControl<RefinedScope<'g, G>>>,
     // If Some, an override for the default listen sleep retry parameters.
     listen_sleep: Option<impl Fn() -> RetryParameters + 'static>,
@@ -380,7 +383,7 @@ where
         error_handler,
         project,
     );
-    let rows = decode_and_mfp(cfg, &fetched, &name, until, map_filter_project);
+    let rows = decode_and_mfp(cfg, &fetched, &name, until, map_filter_project, tf_ts_limit);
     (rows, token)
 }
 
@@ -413,6 +416,7 @@ pub fn decode_and_mfp<G>(
     name: &str,
     until: Antichain<Timestamp>,
     mut map_filter_project: Option<&mut MfpPlan>,
+    tf_ts_limit: Option<Timestamp>,
 ) -> Stream<G, (Result<Row, DataflowError>, G::Timestamp, Diff)>
 where
     G: Scope<Timestamp = (mz_repr::Timestamp, Subtime)>,
@@ -474,6 +478,7 @@ where
                     yield_fn,
                     &until,
                     map_filter_project.as_ref(),
+                    tf_ts_limit,
                     &mut datum_vec,
                     &mut row_builder,
                     &mut output,
@@ -542,6 +547,7 @@ impl PendingWork {
         yield_fn: YFn,
         until: &Antichain<Timestamp>,
         map_filter_project: Option<&MfpPlan>,
+        tf_ts_limit: Option<Timestamp>,
         datum_vec: &mut DatumVec,
         row_builder: &mut Row,
         output: &mut OutputHandleCore<
@@ -602,7 +608,11 @@ impl PendingWork {
                             &arena,
                             time,
                             diff,
-                            |time| !until.less_equal(time),
+                            |time| {
+                                !until.less_equal(time) && tf_ts_limit.map_or(true, |tf_ts_limit| {
+                                    time < &tf_ts_limit
+                                })
+                            },
                             row_builder,
                         ) {
                             if let Some(_stats) = &is_filter_pushdown_audit {

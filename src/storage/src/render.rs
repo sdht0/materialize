@@ -235,6 +235,7 @@ pub fn build_ingestion_dataflow<A: Allocate>(
     as_of: Antichain<mz_repr::Timestamp>,
     resume_uppers: BTreeMap<GlobalId, Antichain<mz_repr::Timestamp>>,
     source_resume_uppers: BTreeMap<GlobalId, Vec<Row>>,
+    tf_ts_limit: Option<mz_repr::Timestamp>,
 ) {
     let worker_id = timely_worker.index();
     let worker_logging = timely_worker.log_register().get("timely");
@@ -307,6 +308,7 @@ pub fn build_ingestion_dataflow<A: Allocate>(
                     &feedback,
                     storage_state,
                     base_source_config,
+                    tf_ts_limit,
                 ),
                 GenericSourceConnection::Postgres(c) => crate::render::sources::render_source(
                     mz_scope,
@@ -317,6 +319,7 @@ pub fn build_ingestion_dataflow<A: Allocate>(
                     &feedback,
                     storage_state,
                     base_source_config,
+                    tf_ts_limit
                 ),
                 GenericSourceConnection::MySql(c) => crate::render::sources::render_source(
                     mz_scope,
@@ -327,6 +330,7 @@ pub fn build_ingestion_dataflow<A: Allocate>(
                     &feedback,
                     storage_state,
                     base_source_config,
+                    tf_ts_limit
                 ),
                 GenericSourceConnection::LoadGenerator(c) => crate::render::sources::render_source(
                     mz_scope,
@@ -337,6 +341,7 @@ pub fn build_ingestion_dataflow<A: Allocate>(
                     &feedback,
                     storage_state,
                     base_source_config,
+                    tf_ts_limit
                 ),
             };
             tokens.extend(source_tokens);
@@ -439,6 +444,7 @@ pub fn build_export_dataflow<A: Allocate>(
     storage_state: &mut StorageState,
     id: GlobalId,
     description: StorageSinkDesc<MetadataFilled, mz_repr::Timestamp>,
+    tf_ts_limit: Option<mz_repr::Timestamp>,
 ) {
     let worker_logging = timely_worker.log_register().get("timely");
     let debug_name = id.to_string();
@@ -456,7 +462,7 @@ pub fn build_export_dataflow<A: Allocate>(
             > = scope;
             let mut tokens = vec![];
             let (health_stream, sink_tokens) =
-                crate::render::sinks::render_sink(scope, storage_state, id, &description);
+                crate::render::sinks::render_sink(scope, storage_state, id, &description, tf_ts_limit);
             tokens.extend(sink_tokens);
 
             let mut health_configs = BTreeMap::new();

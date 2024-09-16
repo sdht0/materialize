@@ -67,6 +67,7 @@ pub fn render_source<'g, G, C>(
     resume_stream: &Stream<Child<'g, G, mz_repr::Timestamp>, ()>,
     storage_state: &crate::storage_state::StorageState,
     base_source_config: RawSourceCreationConfig,
+    tf_ts_limit: Option<mz_repr::Timestamp>,
 ) -> (
     Vec<(
         Collection<Child<'g, G, mz_repr::Timestamp>, Row, Diff>,
@@ -129,6 +130,7 @@ where
             storage_state,
             base_source_config.clone(),
             starter.clone(),
+            tf_ts_limit,
         );
         needed_tokens.extend(extra_tokens);
         outputs.push((ok, err));
@@ -151,6 +153,7 @@ fn render_source_stream<G, FromTime>(
     storage_state: &crate::storage_state::StorageState,
     base_source_config: RawSourceCreationConfig,
     rehydrated_token: impl std::any::Any + 'static,
+    tf_ts_limit: Option<mz_repr::Timestamp>,
 ) -> (
     Collection<G, Row, Diff>,
     Collection<G, DataflowError, Diff>,
@@ -290,6 +293,7 @@ where
                                 SnapshotMode::Include,
                                 Antichain::new(),
                                 None,
+                                tf_ts_limit,
                                 flow_control,
                                 false.then_some(|| unreachable!()),
                                 async {},
