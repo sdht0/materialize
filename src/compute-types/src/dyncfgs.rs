@@ -132,6 +132,14 @@ pub const PERSIST_SINK_OBEY_READ_ONLY: Config<bool> = Config::new(
     "Whether the compute persist_sink obeys read-only mode.",
 );
 
+/// Sets the max lifetime for replicas configured as an offset to the replica start time.
+/// Diffs generated at timestamps beyond the expiration time are dropped.
+pub const COMPUTE_REPLICA_EXPIRATION: Config<Duration> = Config::new(
+    "compute_replica_expiration",
+    Duration::from_secs(22 * 24 * 60 * 60), // 22 days
+    "The expiration time for replicas. Zero disables expiration.",
+);
+
 /// Adds the full set of all compute `Config`s.
 pub fn all_dyncfgs(configs: ConfigSet) -> ConfigSet {
     configs
@@ -150,4 +158,5 @@ pub fn all_dyncfgs(configs: ConfigSet) -> ConfigSet {
         .add(&COPY_TO_S3_ARROW_BUILDER_BUFFER_RATIO)
         .add(&COPY_TO_S3_MULTIPART_PART_SIZE_BYTES)
         .add(&PERSIST_SINK_OBEY_READ_ONLY)
+        .add(&COMPUTE_REPLICA_EXPIRATION)
 }
