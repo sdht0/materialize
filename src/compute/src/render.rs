@@ -127,7 +127,6 @@ use mz_repr::{Datum, GlobalId, Row, SharedRow};
 use mz_storage_operators::persist_source;
 use mz_storage_types::controller::CollectionMetadata;
 use mz_storage_types::errors::DataflowError;
-use mz_storage_types::sources::Timeline;
 use mz_timely_util::operator::CollectionExt;
 use timely::communication::Allocate;
 use timely::container::columnation::Columnation;
@@ -199,7 +198,7 @@ pub fn build_compute_dataflow<A: Allocate>(
         .map(|(sink_id, sink)| (*sink_id, dataflow.depends_on(sink.from), sink.clone()))
         .collect::<Vec<_>>();
 
-    let expire_at = if dataflow.timeline == Some(Timeline::EpochMilliseconds) {
+    let expire_at = if dataflow.is_timeline_epochms {
         compute_state
             .replica_expiration
             .map(Antichain::from_elem)

@@ -2556,6 +2556,7 @@ impl Coordinator {
                             entry.name().clone(),
                             idx.on,
                             idx.keys.to_vec(),
+                            None,
                         );
                         let global_mir_plan = optimizer.optimize(index_plan)?;
                         let optimized_plan = global_mir_plan.df_desc().clone();

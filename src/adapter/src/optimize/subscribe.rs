@@ -13,6 +13,16 @@ use std::marker::PhantomData;
 use std::sync::Arc;
 use std::time::{Duration, Instant};
 
+use crate::catalog::Catalog;
+use crate::optimize::dataflows::{
+    dataflow_import_id_bundle, prep_relation_expr, prep_scalar_expr, ComputeInstanceSnapshot,
+    DataflowBuilder, ExprPrepStyle,
+};
+use crate::optimize::{
+    optimize_mir_local, trace_plan, LirDataflowDescription, MirDataflowDescription, Optimize,
+    OptimizeMode, OptimizerConfig, OptimizerError,
+};
+use crate::CollectionIdBundle;
 use differential_dataflow::lattice::Lattice;
 use mz_adapter_types::connection::ConnectionId;
 use mz_compute_types::plan::Plan;
@@ -29,17 +39,6 @@ use mz_transform::normalize_lets::normalize_lets;
 use mz_transform::typecheck::{empty_context, SharedContext as TypecheckContext};
 use mz_transform::TransformCtx;
 use timely::progress::Antichain;
-
-use crate::catalog::Catalog;
-use crate::optimize::dataflows::{
-    dataflow_import_id_bundle, prep_relation_expr, prep_scalar_expr, ComputeInstanceSnapshot,
-    DataflowBuilder, ExprPrepStyle,
-};
-use crate::optimize::{
-    optimize_mir_local, trace_plan, LirDataflowDescription, MirDataflowDescription, Optimize,
-    OptimizeMode, OptimizerConfig, OptimizerError,
-};
-use crate::CollectionIdBundle;
 
 pub struct Optimizer {
     /// A typechecking context to use throughout the optimizer pipeline.
@@ -189,7 +188,7 @@ impl Optimize<SubscribeFrom> for Optimizer {
             let compute = self.compute_instance.clone();
             DataflowBuilder::new(catalog, compute).with_config(&self.config)
         };
-        let mut df_desc = MirDataflowDescription::new(self.debug_name.clone());
+        let mut df_desc = MirDataflowDescription::new(self.debug_name.clone(), false); // timeline will be set in `resolve`.
         let mut df_meta = DataflowMetainfo::default();
 
         match plan {
@@ -301,7 +300,7 @@ impl GlobalMirPlan<Unresolved> {
     pub fn resolve(
         mut self,
         as_of: Antichain<Timestamp>,
-        timeline: Option<Timeline>,
+        timeline_ctx: Option<Timeline>,
     ) -> GlobalMirPlan<Resolved> {
         // A dataflow description for a `SUBSCRIBE` statement should not have
         // index exports.
@@ -313,6 +312,9 @@ impl GlobalMirPlan<Unresolved> {
         // Set the `as_of` timestamp for the dataflow.
         self.df_desc.set_as_of(as_of);
 
+        // Detect the timeline type.
+        self.df_desc.is_timeline_epochms = timeline_ctx == Some(Timeline::EpochMilliseconds);
+
         // The only outputs of the dataflow are sinks, so we might be able to
         // turn off the computation early, if they all have non-trivial
         // `up_to`s.
@@ -320,9 +322,6 @@ impl GlobalMirPlan<Unresolved> {
         for (_, sink) in &self.df_desc.sink_exports {
             self.df_desc.until.join_assign(&sink.up_to);
         }
-
-        // Capture the timeline.
-        self.df_desc.timeline = timeline;
 
         GlobalMirPlan {
             df_desc: self.df_desc,
